@@ -1,0 +1,121 @@
+set_to_unity:
+Definition: template<class T, int N> inline void set_to_unity(Matrix<T,N,N>& M)
+Description: Sets the matrix M to an identity matrix, where the diagonal elements are 1 and all other elements are 0.
+
+
+unity:
+Definition: template<class T, int N> inline Matrix<T,N,N> unity()
+Description: Returns an identity matrix of size NxN.
+
+
+trace:
+Definition: template<class T, int N> inline T trace(const Matrix<T,N,N>& M)
+Description: Calculates the trace of the square matrix M, i.e., the sum of the diagonal elements.
+
+operator* (Matrix-Matrix multiplication):
+Definition: template<class T, int L, int M, int N> inline Matrix<T,L,N> operator* (const Matrix<T,L,M>& A, const Matrix<T,M,N>& B)
+Description: Overloaded multiplication operator for matrix-matrix multiplication. It returns the result of multiplying matrices A and B.
+
+
+multiply:
+Definition: template<class T, int L, int M, int N> inline void multiply(Matrix<T,L,M>& A, Matrix<T,M,N>& B, Matrix<T,L,N>& C)
+Description: Performs matrix multiplication of matrices A and B and stores the result in matrix C.
+
+
+multiplyZ:
+Definitions:
+template<class T, int L, int M, int N> inline void multiplyZ(Matrix<T,L,M>& A, Matrix<T,M,N>& B, Matrix<T,L,N>& C)
+template<class T, int N1, int N2> inline void multiplyZ(Matrix<T,N1,N2>& A, const T x, Matrix<T,N1,N2>& C)
+Description: Performs matrix multiplication similar to multiply but with additional conditions where multiplication is performed only if both multiplicands are non-zero. Also, supports multiplication of a matrix by a scalar.
+
+
+apl_ml:
+Definition: template<class T, int N1, int N2> inline void apl_ml(Matrix<T,N1,N2>& A, const T x, Matrix<T,N1,N2>& C)
+Description: Performs element-wise multiplication of matrix A by a scalar x and adds the result to matrix C.
+
+
+as_ml_ml:
+Definition: template<class T, int L, int M, int N> inline void as_ml_ml(Matrix<T,L,M>& A, Matrix<T,M,N>& B, const T x, Matrix<T,L,N>& C)
+Description: Performs matrix multiplication of matrices A and B, multiplies the result by scalar x, and stores the final result in matrix C.
+
+
+operator* (Matrix-Vector multiplication):
+Definitions:
+template<class T, int L, int M> inline Vector<T,L> operator* (const Matrix<T,L,M>& A, const Vector<T,M>& B)
+template<class T, int L, int M> inline Vector<T,M> operator* (const Vector<T,L>& B, const Matrix<T,L,M>& A)
+Description: Overloaded multiplication operators for matrix-vector and vector-matrix multiplication.
+
+
+operator% (Outer Product):
+Definition: template<class T, int N> inline Matrix<T,N,N> operator% (const Vector<T,N>& a, const Vector<T,N>& b)
+Description: Calculates the outer product of two vectors a and b and returns the resulting matrix.
+
+
+GaussInvert:
+Definition: template<class T, int N> inline void GaussInvert(Matrix<T,N,N>& A)
+Description: Performs Gaussian elimination to find the inverse of the square matrix A.
+
+
+invert:
+Definition: template<class T, int N> inline void invert(const Matrix<T,N,N>& A, Matrix<T,N,N>& A1)
+Description: Finds the inverse of the square matrix A and stores it in matrix A1.
+
+
+inverse:
+Definition: template<class T, int N> inline Matrix<T,N,N> inverse(const Matrix<T,N,N>& A)
+Description: Returns the inverse of the square matrix A.
+
+
+operator! (Matrix Transpose):
+Definition: template<class T, int N, int M> inline Matrix<T,N,M> operator! (const Matrix<T,M,N>& A)
+Description: Overloaded unary operator for matrix transpose. It returns the transpose of the matrix A.
+
+########################################
+The GaussInvert function is a template function for computing the inverse of a given square matrix 
+A
+A using Gaussian elimination with partial pivoting. Here is an explanation of the key components and steps in this function:
+
+Template Parameters
+T: The type of elements stored in the matrix (e.g., float, double).
+N: The size of the matrix, which is 
+N
+×
+N
+N×N.
+Function Parameters
+Matrix<T,N,N>& A: A reference to the square matrix of type T and size 
+N
+×
+N
+N×N that will be inverted in place.
+Local Variables
+ipiv, indxr, indxc: Vectors of size 
+N
+N. ipiv keeps track of pivot rows; indxr and indxc record the row and column swaps made during the elimination process.
+irow, icol: Integers indicating the current pivot row and column.
+big: A variable of type T used to find the largest element for pivoting.
+pivinv: The inverse of the pivot element.
+dum: Temporary storage for an element used in row operations.
+Steps in the Function
+Initialization: The vector ipiv is initialized to zero. This vector tracks whether a row has been used as a pivot row.
+Main Loop for Each Pivot Element: This loop iterates over each diagonal element of the matrix 
+A
+A to perform the pivot operation.
+Finding the Pivot: Nested loops search for the absolute largest unused element in the matrix (not yet pivoted) to use as the pivot element, ensuring numerical stability.
+Singularity Check: If any row has already been pivoted twice (ipiv[k] > 1), the matrix is deemed singular (non-invertible). Similarly, if the chosen pivot element is zero, an error is raised for singularity.
+Pivot Preparation:
+Row Swapping: If the pivot row irow is not the same as the current column icol, the rows are swapped to move the pivot element to the diagonal.
+Recording Row Swaps: The swaps are recorded in indxr and indxc for use in later back-substitution.
+Scaling the Pivot Row:
+Pivot Inversion: The pivot element is inverted.
+Row Normalization: The entire pivot row is scaled so that the pivot element becomes 1.
+Elimination Process:
+Zeroing Out the Column: All elements in the current pivot column (except the pivot row) are set to zero using appropriate row operations, effectively creating zeros below and above the pivot position.
+Final Adjustment (Back-substitution):
+Undo Row Swapping: After all pivots have been processed, the rows and columns swapped during the pivoting must be swapped back to their original positions to reflect the final inverted matrix.
+Conclusion
+This function modifies the matrix 
+A
+A in place to become its inverse. The function ensures numerical stability by using partial pivoting (choosing the largest available element as the pivot). It efficiently handles the matrix operations with direct access to elements and uses a combination of row swaps and scaling to achieve the matrix inversion.
+
+This Gaussian elimination approach to matrix inversion is computationally efficient and widely used due to its robustness and relatively straightforward implementation.

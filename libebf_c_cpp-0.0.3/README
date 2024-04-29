@@ -1,0 +1,22 @@
+------------------------------------------------------------------
+EBF (Efficient Binary Format) Software Library and Utilities
+Copyright (c) 2012 Sanjib Sharma
+All rights reserved.
+
+The  EBF library is a collection of software tools to read 
+and write EBF format files. The full EBF copyright notice, 
+including terms governing use, modification, and redistribution, 
+is contained in  the files COPYING.
+------------------------------------------------------------------
+
+
+To compile C and C++ libs see INSTALL for details. 
+In short you have to follow the standard procudere of 
+./configure
+make
+make install
+
+Detailed documentation is available in ebfdocs/index.html.
+ 
+
+

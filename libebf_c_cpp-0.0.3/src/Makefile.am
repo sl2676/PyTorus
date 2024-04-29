@@ -1,0 +1,2 @@
+SUBDIRS = cpp c 
+ACLOCAL_AMFLAGS = -I m4
