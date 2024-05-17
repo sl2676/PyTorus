@@ -1,0 +1,15 @@
+lldb -- python3 numerics.py
+settings set -- target.run-args "numerics.py"
+target create "python3"
+run 
+frame variable
+bt
+
+
+lldb -- python3 numerics.py
+settings set -- target.run-args "numerics.py"
+target create "python3"
+b PyVector::__setitem__
+settings set -- target.run-args "numerics.py"
+run
+

@@ -133,7 +133,6 @@ public:
     size_t getCols() const override {
         return data[0].size();
     }
-
 	T& getValueAt(size_t row, size_t col) {
     	return data[row][col];
 	}
@@ -145,7 +144,6 @@ public:
 	void setValueAt(size_t row, size_t col, T value) {
     	data[row][col] = value;
 	}
-
 	void setColumnFromStdVector(size_t colIndex, const std::vector<T>& columnVector) {
         if (colIndex >= cols) {
             throw std::out_of_range("Column index is out of bounds.");
@@ -260,7 +258,7 @@ public:
     	}
 	}
 	
-	py::object getValueAt(size_t row, size_t col) const {
+	py::object getValueAt(int row, int col) const {
         return std::visit([row, col](const auto& arg) -> py::object {
             return py::cast(arg->getValueAt(row, col));
         }, matrixVariant);

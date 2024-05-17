@@ -1067,12 +1067,9 @@ public:
         return typedVec->data[index];
     }
 */
-	py::object __getitem__(ssize_t index) const {
+	py::object __getitem__(int index) const {
     	if (!baseVec) throw py::index_error("Vector is uninitialized.");
-
-
 		size_t adjusted_index = static_cast<size_t>(index);
-//    	size_t size = baseVec->size();
     	if (index < 0) {
     		adjusted_index = baseVec->size() + index;
 		}
@@ -1092,14 +1089,24 @@ public:
  	   }
 	}
 
+	
 
-    void __setitem__(ssize_t index, py::object value) {
-        if (!baseVec || index >= static_cast<ssize_t>(dynamic_cast<const TypedVector<int>*>(baseVec.get())->vec.size())) {
-            throw py::index_error();
-			throw std::runtime_error("broekn stuff");
-        }
-        baseVec->setItem(index, value);
-    }
+	void __setitem__(int index, py::object value) {
+    	if (!baseVec) throw py::index_error("Vector is uninitialized.");
+    		if (auto vecInt = dynamic_cast<TypedVector<int>*>(baseVec.get())) {
+        		if (index < 0 || index >= vecInt->vec.size()) throw py::index_error("Index out of range.");
+        		vecInt->vec[index] = py::cast<int>(value);
+    		} else if (auto vecFloat = dynamic_cast<TypedVector<double>*>(baseVec.get())) {
+        		if (index < 0 || index >= vecFloat->vec.size()) throw py::index_error("Index out of range.");
+        		vecFloat->vec[index] = py::cast<double>(value);
+    		} else if (auto vecComplex = dynamic_cast<TypedVector<std::complex<double>>*>(baseVec.get())) {
+        		if (index < 0 || index >= vecComplex->vec.size()) throw py::index_error("Index out of range.");
+        		vecComplex->vec[index] = py::cast<std::complex<double>>(value);
+    		} else {
+        		throw std::runtime_error("Unsupported vector type for indexing.");
+    		}
+	}
+
 	
 	template<typename Scalar>
     PyVector multiply(Scalar scalar) const {

@@ -4,7 +4,7 @@ from distutils.core import setup, Extension
 from distutils import sysconfig
 
 #cpp_args = ['-std=c++17', '-stdlib=libc++', '-Wno-register','-mmacosx-version-min=10.7']
-cpp_args = ['-std=c++17', '-stdlib=libc++', '-Wno-register', '-mmacosx-version-min=10.14']
+cpp_args = ['-std=c++17', '-stdlib=libc++', '-Wno-register', '-mmacosx-version-min=10.14', '-Wall']
 
 ext_modules = [
 	Extension(
