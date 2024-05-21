@@ -310,74 +310,6 @@ p.CholeskyInvertF(a, n)
 print("Inverse of the original matrix A:")
 print(a)
 print()
-'''
-print("---------------------")
-print("LUDecomposition")
-a = p.Matrix(3, 3)
-vec = p.Vector(4.0, 12.0, -16.0)
-a.set_row(0, vec)
-vec = p.Vector(12.0, 37.0, -43.0)
-a.set_row(1, vec)
-vec = p.Vector(-16.0, -43.0, 98.0)
-a.set_row(2, vec)
-b = p.Vector(1.0, 1.0, 1.0)
-print(a)
-
-indx = p.Vector(0, 0, 0)
-n = 3
-d = 1
-p.LUDecomposition(a, n, indx, d)
-#p.LUSolution(a, n, indx, b)
-print("LU Decomposed Matrix A:")
-print()
-print(a)
-
-print("Index Vector indx:")
-print(indx)
-
-print("Parity d:")
-print(d)
-print()
-'''
-print("---------------------")
-print("LUDet3")
-a = p.Matrix(3, 3)
-vec = p.Vector(4.0, 12.0, -16.0)
-a.set_row(0, vec)
-vec = p.Vector(12.0, 37.0, -43.0)
-a.set_row(1, vec)
-vec = p.Vector(-16.0, -43.0, 98.0)
-a.set_row(2, vec)
-b = p.Vector(1.0, 1.0, 1.0)
-print(a)
-
-det_A = p.LUDet3(a)
-print("Determinant of the matrix A:")
-print(det_A)
-print()
-
-b = p.Matrix(3, 3)
-vec = p.Vector(6, 1, 1)
-b.set_row(0, vec)
-vec = p.Vector(4, -2, 5)
-b.set_row(1, vec)
-vec = p.Vector(2, 8, 7)
-b.set_row(2, vec)
-print(b)
-
-det_B = p.LUDet3(b)
-print(det_B)
-
-c = p.Matrix(3, 3)
-vec = p.Vector(1, 1, 1)
-for i in range(3):
-	c.set_row(i, vec)
-
-print(c)
-
-det_C = p.LUDet3(c)
-print(det_C)
-
 print("---------------------")
 print("LUDecomposition")
 
@@ -388,23 +320,151 @@ vec = p.Vector(12, 37, -43)
 a.set_row(1, vec)
 vec = p.Vector(-16, -43, 98)
 a.set_row(2, vec)
+
 print(a)
-b = p.Vector(1, 1, 1)
-indx = p.Vector(0, 0, 0)
 
 n = 3
 d = 1
-g = p.LUDecomposition(a, n, indx, d)
-#p.LUSolution(a, n, indx, b)
-print(a)
-print(g)
-print("Vector indx")
-print(indx)
 
-print("Parity")
+indx = p.Vector(0, 0, 0)
+
+p.LUDecomposition(a, n, indx, d)
+print(a)
+print()
+
+print("---------------------")
+print("LUDet3")
+a = p.Matrix(3, 3)
+vec = p.Vector(4, 12, -16)
+a.set_row(0, vec)
+vec = p.Vector(12, 37, -43)
+a.set_row(1, vec)
+vec = p.Vector(-16, -43, 98)
+a.set_row(2, vec)
+print(a)
+
+det_A = p.LUDet3(a)
+
+print(det_A)
+print()
+
+print("---------------------")
+print("LUSolution")
+indx = p.Vector(0, 0, 0)
+n = 3
+d = 1
+
+b = p.Vector(1, 0, 1)
+
+print(a)
+p.LUDecomposition(a, n, indx, d)
+
+print(a)
+
+p.LUSolution(a, n, indx, b)
+
+print(b)
+
+b_mat = p.Matrix(3, 1)
+b_mat.set_column(0, b)
+print(b_mat)
+a = p.Matrix(3, 3)
+vec = p.Vector(4.0, 12, -16)
+a.set_row(0, vec)
+vec = p.Vector(12, 37, -43)
+a.set_row(1, vec)
+vec = p.Vector(-16, -43, 98)
+a.set_row(2, vec)
+print(a*b)
+print()
+print("---------------------")
+print("LUInvert")
+y = p.Matrix(3, 3)
+vec = p.Vector(0, 0, 0)
+for i in range(3):
+	y.set_row(i, vec)
+
+print(y)
+print(a)
+n = 3
+d = 1
+indx = p.Vector(0, 0, 0)
+p.LUDecomposition(a, n, indx, d)
+
+print(a)
+p.LUInvert(a, y, n, indx)
+
+print(y)
+
+print("---------------------")
+print("tred2")
+'''
+Original matrix:
+         4          1         -2          2 
+         1          2          0          1 
+        -2          0          3         -2 
+         2          1         -2         -1 
+
+Tridiagonal matrix (stored in 'a'):
+        1.0          0          0          0 
+         0        1.0          0          0 
+         0          0        1.0          0 
+         0          0          0        1.0 
+
+Diagonal elements (d):
+         0          4          2          3 
+
+Off-diagonal elements (e):
+         0          1          0          1 
+'''
+
+a = p.Matrix(4, 4)
+vec = p.Vector(4, 1, -2, 2)
+a.set_row(0, vec)
+vec = p.Vector(1, 2, 0, 1)
+a.set_row(1, vec)
+vec = p.Vector(-2, 0, 3, -2)
+a.set_row(2, vec)
+vec = p.Vector(2, 1, -2, -1)
+a.set_row(3, vec)
+
+
+print(a)
+
+d = p.Vector(0, 0, 0, 0)
+e = p.Vector(0, 0, 0, 0)
+
+EV = '1'
+n = 4
+p.tred2(a, n, d, e, EV)
+
+print("A Matrix")
+print(a)
+
+print("D Vector")
 print(d)
 
-print("Solution Vector")
-print(b)
+print("E Vector")
+print(e)
+
+print("EV")
+print(EV)
+print()
+
+print("---------------------")
+print("tqli")
+
+a = p.Matrix(4, 4)
+vec = p.Vector(4, 1, -2, 2)
+a.set_row(0, vec)
+vec = p.Vector(1, 2, 0, 1)
+a.set_row(1, vec)
+vec = p.Vector(-2, 0, 3, -2)
+a.set_row(2, vec)
+vec = p.Vector(2, 1, -2, -1)
+a.set_row(3, vec)
+
+
+print(a)
 
 

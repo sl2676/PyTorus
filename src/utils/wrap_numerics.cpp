@@ -943,6 +943,519 @@ void LUSolution(PyMatrix& a, const int n, PyVector& indx, PyVector& b) {
     }
 }
 
+void LUInvert(PyMatrix& a, PyMatrix& y, const int n, PyVector& indx) {
+    int i, j;
+    std::vector<double> col_data(n, 0.0);  
+    PyVector col(py::cast(col_data));
+    y.promoteMatrixVariantIfNeeded<double>();
+
+    for (j = 0; j < n; j++) {
+        for (i = 0; i < n; i++) {
+            col.__setitem__(i, py::float_(0.0));
+        }
+        col.__setitem__(j, py::float_(1.0));
+        LUSolution(a, n, indx, col);
+        for (i = 0; i < n; i++) {
+            y.set_value(i, j, col.__getitem__(i));
+        }
+    }
+}
+
+void tred2(PyMatrix& a, const int n, PyVector& d, PyVector& e, const char EV) {
+    int l, k, j, i;
+    double scale, hh, h, g, f;
+
+    a.promoteMatrixVariantIfNeeded<double>();
+	auto convertedDVector = PyVector::convertToFloatIfNeeded(d.getBaseVector().get());
+	auto convertedEVector = PyVector::convertToFloatIfNeeded(e.getBaseVector().get());
+	d = PyVector(std::move(convertedDVector));
+	e = PyVector(std::move(convertedEVector));
+	
+
+    for (i = n - 1; i > 0; i--) {
+        l = i - 1;
+        h = scale = 0.0;
+        if (l > 0) {
+            for (k = 0; k <= l; k++) {
+                scale += fabs(py::cast<double>(a.getValueAt(i, k)));
+            }
+            if (scale == 0.0) {
+                e.__setitem__(i, a.getValueAt(i, l));
+            } else {
+                for (k = 0; k <= l; k++) {
+                    a.set_value(i, k, py::float_(py::cast<double>(a.getValueAt(i, k)) / scale));
+                    h += py::cast<double>(a.getValueAt(i, k)) * py::cast<double>(a.getValueAt(i, k));
+                }
+                f = py::cast<double>(a.getValueAt(i, l));
+                g = (f >= 0.0) ? -sqrt(h) : sqrt(h);
+                e.__setitem__(i, py::float_(scale * g));
+                h -= f * g;
+                a.set_value(i, l, py::float_(f - g));
+                f = 0.0;
+                for (j = 0; j <= l; j++) {
+                    if (EV) a.set_value(j, i, py::float_(py::cast<double>(a.getValueAt(i, j)) / h));
+                    g = 0.0;
+                    for (k = 0; k <= j; k++) {
+                        g += py::cast<double>(a.getValueAt(j, k)) * py::cast<double>(a.getValueAt(i, k));
+                    }
+                    for (k = j + 1; k <= l; k++) {
+                        g += py::cast<double>(a.getValueAt(k, j)) * py::cast<double>(a.getValueAt(i, k));
+                    }
+                    e.__setitem__(j, py::float_(g / h));
+                    f += py::cast<double>(e.__getitem__(j)) * py::cast<double>(a.getValueAt(i, j));
+                }
+                hh = f / (h + h);
+                for (j = 0; j <= l; j++) {
+                    f = py::cast<double>(a.getValueAt(i, j));
+                    e.__setitem__(j, py::float_(py::cast<double>(e.__getitem__(j)) - hh * f));
+                    g = py::cast<double>(e.__getitem__(j));
+                    for (k = 0; k <= j; k++) {
+                        a.set_value(j, k, py::float_(py::cast<double>(a.getValueAt(j, k)) - (f * py::cast<double>(e.__getitem__(k)) + g * py::cast<double>(a.getValueAt(i, k)))));
+                    }
+                }
+            }
+        } else {
+            e.__setitem__(i, a.getValueAt(i, l));
+        }
+        d.__setitem__(i, py::float_(h));
+    }
+    d.__setitem__(0, py::float_(0.0));
+    e.__setitem__(0, py::float_(0.0));
+
+    if (EV) {
+        for (i = 0; i < n; i++) {
+            l = i - 1;
+            if (py::cast<double>(d.__getitem__(i)) != 0.0) {
+                for (j = 0; j <= l; j++) {
+                    g = 0.0;
+                    for (k = 0; k <= l; k++) {
+                        g += py::cast<double>(a.getValueAt(i, k)) * py::cast<double>(a.getValueAt(k, j));
+                    }
+                    for (k = 0; k <= l; k++) {
+                        a.set_value(k, j, py::float_(py::cast<double>(a.getValueAt(k, j)) - g * py::cast<double>(a.getValueAt(k, i))));
+                    }
+                }
+            }
+            d.__setitem__(i, a.getValueAt(i, i));
+            a.set_value(i, i, py::float_(1.0));
+            for (j = 0; j <= l; j++) {
+                a.set_value(j, i, py::float_(0.0));
+                a.set_value(i, j, py::float_(0.0));
+            }
+        }
+    } else {
+        for (i = 0; i < n; i++) {
+            d.__setitem__(i, a.getValueAt(i, i));
+        }
+    }
+}
+
+void tqli(PyVector& d, PyVector& e, const int n, PyMatrix& z, const char EV) {
+    int m, l, iter, i, k;
+    double s, r, p, g, f, dd, c, b;
+
+    auto convertedDVector = PyVector::convertToFloatIfNeeded(d.getBaseVector().get());
+	auto convertedEVector = PyVector::convertToFloatIfNeeded(e.getBaseVector().get());
+	d = PyVector(std::move(convertedDVector));
+	e = PyVector(std::move(convertedEVector));
+
+	z.promoteMatrixVariantIfNeeded<double>();
+
+    for (i = 1; i < n; i++) {
+        e.__setitem__(i - 1, e.__getitem__(i));
+    }
+    e.__setitem__(n - 1, py::float_(0.0));
+
+    for (l = 0; l < n; l++) {
+        iter = 0;
+        do {
+            for (m = l; m < n - 1; m++) {
+                dd = fabs(py::cast<double>(d.__getitem__(m))) + fabs(py::cast<double>(d.__getitem__(m + 1)));
+                if (fabs(py::cast<double>(e.__getitem__(m))) + dd == dd) break;
+            }
+            if (m != l) {
+                if (iter++ == 30) {
+                    throw std::runtime_error("tqli: too many iterations");
+                }
+                g = (py::cast<double>(d.__getitem__(l + 1)) - py::cast<double>(d.__getitem__(l))) / (2.0 * py::cast<double>(e.__getitem__(l)));
+                r = (g == 0.0) ? 1.0 : hypot(g, 1.0);
+                g = py::cast<double>(d.__getitem__(m)) - py::cast<double>(d.__getitem__(l)) + py::cast<double>(e.__getitem__(l)) / (g + (g >= 0.0 ? fabs(r) : -fabs(r)));
+                s = c = 1.0;
+                p = 0.0;
+                for (i = m - 1; i >= l; i--) {
+                    f = s * py::cast<double>(e.__getitem__(i));
+                    b = c * py::cast<double>(e.__getitem__(i));
+                    e.__setitem__(i + 1, py::float_(r = hypot(f, g)));
+                    if (r == 0.0) {
+                        d.__setitem__(i + 1, py::float_(py::cast<double>(d.__getitem__(i + 1)) - p));
+                        e.__setitem__(m, py::float_(0.0));
+                        break;
+                    }
+                    s = f / r;
+                    c = g / r;
+                    g = py::cast<double>(d.__getitem__(i + 1)) - p;
+                    r = (py::cast<double>(d.__getitem__(i)) - g) * s + 2.0 * c * b;
+                    p = s * r;
+                    d.__setitem__(i + 1, py::float_(g + p));
+                    g = c * r - b;
+                    if (EV) {
+                        for (k = 0; k < n; k++) {
+                            f = py::cast<double>(z.getValueAt(k, i + 1));
+                            z.set_value(k, i + 1, py::float_(s * py::cast<double>(z.getValueAt(k, i)) + c * f));
+                            z.set_value(k, i, py::float_(c * py::cast<double>(z.getValueAt(k, i)) - s * f));
+                        }
+                    }
+                }
+                if (r == 0.0 && i >= l) continue;
+                d.__setitem__(l, py::float_(py::cast<double>(d.__getitem__(l)) - p));
+                e.__setitem__(l, py::float_(g));
+                e.__setitem__(m, py::float_(0.0));
+            }
+        } while (m != l);
+    }
+}
+
+void balanc(PyMatrix& a, const int n) {
+    const double radix = 2.0, sqrdx = radix * radix;
+    int last = 0, j, i;
+    double s, r, g, f, c;
+
+    a.promoteMatrixVariantIfNeeded<double>();
+
+    while (last == 0) {
+        last = 1;
+        for (i = 0; i < n; i++) {
+            r = c = 0.0;
+            for (j = 0; j < n; j++) {
+                if (j != i) {
+                    c += fabs(py::cast<double>(a.getValueAt(j, i)));
+                    r += fabs(py::cast<double>(a.getValueAt(i, j)));
+                }
+            }
+            if (c != 0.0 && r != 0.0) {
+                g = r / radix;
+                f = 1.0;
+                s = c + r;
+                while (c < g) {
+                    f *= radix;
+                    c *= sqrdx;
+                }
+                g = r * radix;
+                while (c > g) {
+                    f /= radix;
+                    c /= sqrdx;
+                }
+                if ((c + r) / f < 0.95 * s) {
+                    last = 0;
+                    g = 1.0 / f;
+                    for (j = 0; j < n; j++) {
+                        a.set_value(i, j, py::float_(py::cast<double>(a.getValueAt(i, j)) * g));
+                        a.set_value(j, i, py::float_(py::cast<double>(a.getValueAt(j, i)) * f));
+                    }
+                }
+            }
+        }
+    }
+}
+
+void elmhes(PyMatrix& a, const int n) {
+    int m, j, i;
+    double y, x;
+
+    a.promoteMatrixVariantIfNeeded<double>();
+
+
+    for (m = 1; m < n - 1; m++) {
+        x = 0.0;
+        i = m;
+        for (j = m; j < n; j++) {
+            if (fabs(py::cast<double>(a.getValueAt(j, m - 1))) > fabs(x)) {
+                x = py::cast<double>(a.getValueAt(j, m - 1));
+                i = j;
+            }
+        }
+        if (i != m) {
+            for (j = m - 1; j < n; j++) {
+                double temp = py::cast<double>(a.getValueAt(i, j));
+                a.set_value(i, j, a.getValueAt(m, j));
+                a.set_value(m, j, py::float_(temp));
+            }
+            for (j = 0; j < n; j++) {
+                double temp = py::cast<double>(a.getValueAt(j, i));
+                a.set_value(j, i, a.getValueAt(j, m));
+                a.set_value(j, m, py::float_(temp));
+            }
+        }
+        if (x != 0.0) {
+            for (i = m + 1; i < n; i++) {
+                y = py::cast<double>(a.getValueAt(i, m - 1));
+                if (y != 0.0) {
+                    y /= x;
+                    a.set_value(i, m - 1, py::float_(y));
+                    for (j = m; j < n; j++) {
+                        a.set_value(i, j, py::float_(py::cast<double>(a.getValueAt(i, j)) - y * py::cast<double>(a.getValueAt(m, j))));
+                    }
+                    for (j = 0; j < n; j++) {
+                        a.set_value(j, m, py::float_(py::cast<double>(a.getValueAt(j, m)) + y * py::cast<double>(a.getValueAt(j, i))));
+                    }
+                }
+            }
+        }
+    }
+}
+
+void hqr(PyMatrix& a, const int n, PyVector& wr, PyVector& wi) {
+    int nn, m, l, k, j, its, i, mmin;
+    double z = 0.0, y = 0.0, x = 0.0, w = 0.0, v = 0.0, u = 0.0, t = 0.0, s = 0.0, r = 0.0, q = 0.0, p = 0.0, anrm;
+
+    a.promoteMatrixVariantIfNeeded<double>();
+	auto convertedWrVector = PyVector::convertToFloatIfNeeded(wr.getBaseVector().get());
+	auto convertedWiVector = PyVector::convertToFloatIfNeeded(wi.getBaseVector().get());
+	wr = PyVector(std::move(convertedWrVector));
+	wi = PyVector(std::move(convertedWiVector));	
+
+
+    anrm = fabs(py::cast<double>(a.getValueAt(0, 0)));
+    for (i = 1; i < n; i++) {
+        for (j = i - 1; j < n; j++) {
+            anrm += fabs(py::cast<double>(a.getValueAt(i, j)));
+        }
+    }
+    nn = n - 1;
+    t = 0.0;
+    while (nn >= 0) {
+        its = 0;
+        do {
+            for (l = nn; l >= 1; l--) {
+                s = fabs(py::cast<double>(a.getValueAt(l - 1, l - 1))) + fabs(py::cast<double>(a.getValueAt(l, l)));
+                if (s == 0.0) s = anrm;
+                if (fabs(py::cast<double>(a.getValueAt(l, l - 1))) + s == s) break;
+            }
+            x = py::cast<double>(a.getValueAt(nn, nn));
+            if (l == nn) {
+                wr.__setitem__(nn, py::float_(x + t));
+                wi.__setitem__(nn--, py::float_(0.0));
+            } else {
+                y = py::cast<double>(a.getValueAt(nn - 1, nn - 1));
+                w = py::cast<double>(a.getValueAt(nn, nn - 1)) * py::cast<double>(a.getValueAt(nn - 1, nn));
+                if (l == (nn - 1)) {
+                    p = 0.5 * (y - x);
+                    q = p * p + w;
+                    z = sqrt(fabs(q));
+                    x += t;
+                    if (q >= 0.0) {
+                        z = p + ((p >= 0.0) ? fabs(z) : -fabs(z));
+                        wr.__setitem__(nn - 1, py::float_(x + z));
+                        wr.__setitem__(nn, py::float_(x - w / z));
+                        wi.__setitem__(nn - 1, py::float_(0.0));
+                        wi.__setitem__(nn, py::float_(0.0));
+                    } else {
+                        wr.__setitem__(nn - 1, py::float_(x + p));
+                        wr.__setitem__(nn, py::float_(x + p));
+                        wi.__setitem__(nn - 1, py::float_(-(fabs(z))));
+                        wi.__setitem__(nn, py::float_(fabs(z)));
+                    }
+                    nn -= 2;
+                } else {
+                    if (its == 30) throw std::runtime_error("hqr: exceeding iterations");
+                    if (its == 10 || its == 20) {
+                        t += x;
+                        for (i = 0; i <= nn; i++) a.set_value(i, i, py::float_(py::cast<double>(a.getValueAt(i, i)) - x));
+                        s = fabs(py::cast<double>(a.getValueAt(nn, nn - 1))) + fabs(py::cast<double>(a.getValueAt(nn - 1, nn - 2)));
+                        y = x = 0.75 * s;
+                        w = -0.4375 * s * s;
+                    }
+                    ++its;
+                    for (m = nn - 2; m >= l; m--) {
+                        z = py::cast<double>(a.getValueAt(m, m));
+                        r = x - z;
+                        s = y - z;
+                        p = (r * s - w) / py::cast<double>(a.getValueAt(m + 1, m)) + py::cast<double>(a.getValueAt(m, m + 1));
+                        q = py::cast<double>(a.getValueAt(m + 1, m + 1)) - z - r - s;
+                        r = py::cast<double>(a.getValueAt(m + 2, m + 1));
+                        s = fabs(p) + fabs(q) + fabs(r);
+                        p /= s;
+                        q /= s;
+                        r /= s;
+                        if (m == l) break;
+                        u = fabs(py::cast<double>(a.getValueAt(m, m - 1))) * (fabs(q) + fabs(r));
+                        v = fabs(p) * (fabs(py::cast<double>(a.getValueAt(m - 1, m - 1))) + fabs(z) + fabs(py::cast<double>(a.getValueAt(m + 1, m + 1))));
+                        if (u + v == v) break;
+                    }
+                    for (i = m + 2; i <= nn; i++) {
+                        a.set_value(i, i - 2, py::float_(0.0));
+                        if (i != (m + 2)) a.set_value(i, i - 3, py::float_(0.0));
+                    }
+                    for (k = m; k <= nn - 1; k++) {
+                        if (k != m) {
+                            p = py::cast<double>(a.getValueAt(k, k - 1));
+                            q = py::cast<double>(a.getValueAt(k + 1, k - 1));
+                            r = 0.0;
+                            if (k != (nn - 1)) r = py::cast<double>(a.getValueAt(k + 2, k - 1));
+                            if ((x = fabs(p) + fabs(q) + fabs(r)) != 0.0) {
+                                p /= x;
+                                q /= x;
+                                r /= x;
+                            }
+                        }
+                        if ((s = ((p >= 0.0) ? fabs(p) : -fabs(p)) * sqrt(p * p + q * q + r * r)) != 0.0) {
+                            if (k == m) {
+                                if (l != m) a.set_value(k, k - 1, py::float_(-py::cast<double>(a.getValueAt(k, k - 1))));
+                            } else {
+                                a.set_value(k, k - 1, py::float_(-s * x));
+                            }
+                            p += s;
+                            x = p / s;
+                            y = q / s;
+                            z = r / s;
+                            q /= p;
+                            r /= p;
+                            for (j = k; j < n; j++) {
+                                p = py::cast<double>(a.getValueAt(k, j)) + q * py::cast<double>(a.getValueAt(k + 1, j));
+                                if (k != (nn - 1)) {
+                                    p += r * py::cast<double>(a.getValueAt(k + 2, j));
+                                    a.set_value(k + 2, j, py::float_(py::cast<double>(a.getValueAt(k + 2, j)) - p * z));
+                                }
+                                a.set_value(k + 1, j, py::float_(py::cast<double>(a.getValueAt(k + 1, j)) - p * y));
+                                a.set_value(k, j, py::float_(py::cast<double>(a.getValueAt(k, j)) - p * x));
+                            }
+                            mmin = std::min(nn, k + 3);
+                            for (i = l; i <= mmin; i++) {
+                                p = x * py::cast<double>(a.getValueAt(i, k)) + y * py::cast<double>(a.getValueAt(i, k + 1));
+                                if (k != (nn - 1)) {
+                                    p += z * py::cast<double>(a.getValueAt(i, k + 2));
+                                    a.set_value(i, k + 2, py::float_(py::cast<double>(a.getValueAt(i, k + 2)) - p * r));
+                                }
+                                a.set_value(i, k + 1, py::float_(py::cast<double>(a.getValueAt(i, k + 1)) - p * q));
+                                a.set_value(i, k, py::float_(py::cast<double>(a.getValueAt(i, k)) - p));
+                            }
+                        }
+                    }
+                }
+            }
+        } while (l < nn - 1);
+    }
+}
+
+
+static double LevCof(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a, PyVector& fit, const int M, PyMatrix& A, PyVector& B, double (*f)(const double, PyVector&, PyVector&, const int)) {
+    int i, j, k, l, mf, n;
+    double si, dy, wt, cq = 0.0;
+    std::vector<double> dyda_data(M, 0.0);
+    PyVector dyda(py::cast(dyda_data));
+
+    auto convertedXVector = PyVector::convertToFloatIfNeeded(x.getBaseVector().get());
+    auto convertedYVector = PyVector::convertToFloatIfNeeded(y.getBaseVector().get());
+    auto convertedSigVector = PyVector::convertToFloatIfNeeded(sig.getBaseVector().get());
+    auto convertedaVector = PyVector::convertToFloatIfNeeded(a.getBaseVector().get());
+    auto convertedFitVector = PyVector::convertToFloatIfNeeded(fit.getBaseVector().get());
+    auto convertedBVector = PyVector::convertToFloatIfNeeded(B.getBaseVector().get());
+
+    x = PyVector(std::move(convertedXVector));
+    y = PyVector(std::move(convertedYVector));
+    sig = PyVector(std::move(convertedSigVector));
+    a = PyVector(std::move(convertedaVector));
+    fit = PyVector(std::move(convertedFitVector));
+    B = PyVector(std::move(convertedBVector));
+
+    A.promoteMatrixVariantIfNeeded<double>();
+
+    for (i = mf = 0; i < M; i++) if (py::cast<int>(fit.__getitem__(i))) mf++;
+    for (j = 0; j < mf; j++) {
+        B.__setitem__(j, py::float_(0.0));
+        for (l = 0; l < mf; l++) {
+            A.set_value(j, l, py::float_(0.0));
+        }
+    }
+
+    for (n = 0; n < N; n++) {
+        dy = py::cast<double>(y.__getitem__(n)) - (*f)(py::cast<double>(x.__getitem__(n)), a, dyda, M);
+        si = 1.0 / (py::cast<double>(sig.__getitem__(n)) * py::cast<double>(sig.__getitem__(n)));
+        cq += pow(dy / py::cast<double>(sig.__getitem__(n)), 2);
+
+        for (i = j = 0; i < M; i++) {
+            if (py::cast<int>(fit.__getitem__(i))) {
+                wt = py::cast<double>(dyda.__getitem__(i)) * si;
+                for (k = l = 0; k < M; k++) {
+                    if (py::cast<int>(fit.__getitem__(k))) {
+                        A.set_value(j, l, py::float_(py::cast<double>(A.getValueAt(j, l)) + wt * py::cast<double>(dyda.__getitem__(k))));
+                        l++;
+                    }
+                }
+                B.__setitem__(j, py::float_(py::cast<double>(B.__getitem__(j)) + dy * wt));
+                j++;
+            }
+        }
+    }
+
+    return cq;
+}
+
+double LevMar(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a, PyVector& fit, const int M, double (*f)(const double, PyVector&, PyVector&, const int), const double dcmax, const int itmax) {
+    int it = 0, i, j, mf;
+    int mm[2];
+    double dc, lam = 0.125, tm, cq, cqo;
+    	
+	std::vector<double> zero_mf(mf, 0.0);
+	PyMatrix A(mf, mf);
+    PyMatrix Ay(mf, mf);
+
+	PyVector B(py::cast(zero_mf));
+	PyVector By(py::cast(zero_mf));
+	PyVector ay(py::cast(a.extractDataAs<double>()));
+
+    for (i = mf = 0; i < M; i++) {
+        if (py::cast<int>(fit.__getitem__(i))) mf++;
+    }
+    mm[0] = mm[1] = mf;
+
+    cqo = LevCof(x, y, sig, N, a, fit, M, A, B, f);
+    for (dc = 0., i = 0; i < mf; i++) dc += py::cast<double>(B.__getitem__(i)) * py::cast<double>(B.__getitem__(i));
+    dc = sqrt(dc) / double(N);
+
+    while (dc > dcmax && it++ < itmax) {
+        tm = 1. + lam;
+        for (i = 0; i < mf; i++) {
+            for (j = 0; j < mf; j++) Ay.set_value(i, j, py::float_(py::cast<double>(A.getValueAt(i, j))));
+            Ay.set_value(i, i, py::float_(py::cast<double>(A.getValueAt(i, i)) * tm));
+            By.__setitem__(i, B.__getitem__(i));
+        }
+        GaussBack(Ay, mf, By);
+        for (i = j = 0; i < M; i++) if (py::cast<int>(fit.__getitem__(i))) ay.__setitem__(i, py::float_(py::cast<double>(a.__getitem__(i)) + py::cast<double>(By.__getitem__(j++))));
+        if (cqo > (cq = LevCof(x, y, sig, N, ay, fit, M, Ay, By, f))) {
+            lam *= 0.125;
+            cqo = cq;
+            for (dc = 0., i = 0; i < mf; i++) {
+                B.__setitem__(i, By.__getitem__(i));
+                dc += py::cast<double>(B.__getitem__(i)) * py::cast<double>(B.__getitem__(i));
+                for (j = 0; j < mf; j++) A.set_value(i, j, Ay.getValueAt(i, j));
+            }
+            dc = sqrt(dc) / double(N);
+        } else
+            lam *= 8;
+    }
+
+    return cqo;
+}
+
+inline double gauss_fit(const double x, PyVector& p, PyVector& df, const int D) {
+    if (D != 3) Numerics_message("FitGauss: D != 3");
+
+    double fg, tm;
+    tm = (x - py::cast<double>(p.__getitem__(1))) / py::cast<double>(p.__getitem__(2));
+    df.__setitem__(0, py::float_(exp(-0.5 * pow(tm, 2))));
+    fg = py::cast<double>(p.__getitem__(0)) * py::cast<double>(df.__getitem__(0));
+    df.__setitem__(1, py::float_(tm / py::cast<double>(p.__getitem__(2)) * fg));
+    df.__setitem__(2, py::float_(tm * py::cast<double>(df.__getitem__(1))));
+    
+    return fg;
+}
+
+
+double FitGauss(PyVector& x, PyVector& y, PyVector& dy, const int N, PyVector& p, PyVector& f) {
+
+	return LevMar(x, y, dy, N, p, f, 3, &gauss_fit, 1.e-6, 100);
+}
 
 void init_numerics(py::module_ &torus) {
 	torus.def("GaussJordan", &GaussJordan);
@@ -966,5 +1479,16 @@ void init_numerics(py::module_ &torus) {
 	torus.def("LUDecomposition", &LUDecomposition, py::arg("a"), py::arg("n"), py::arg("indx"), py::arg("d"));
 	torus.def("LUDet3", &LUDet3, py::arg("A"));
 	torus.def("LUSolution", &LUSolution, py::arg("a"), py::arg("n"), py::arg("indx"), py::arg("b"));
+	torus.def("LUInvert", &LUInvert, py::arg("a"), py::arg("y"), py::arg("n"), py::arg("indx"));
+	torus.def("tred2", &tred2, py::arg("a"), py::arg("n"), py::arg("d"), py::arg("e"), py::arg("EV"));
+	torus.def("tqli", &tqli, py::arg("d"), py::arg("e"), py::arg("n"), py::arg("z"), py::arg("EV"));
+	torus.def("balanc", &balanc, py::arg("a"), py::arg("n"));
+	torus.def("elmhes", &elmhes, py::arg("a"), py::arg("n"));
+	torus.def("hqr", &hqr, py::arg("a"), py::arg("n"), py::arg("wr"), py::arg("wi"));
+	torus.def("LevCof", &LevCof, py::arg("x"), py::arg("y"), py::arg("sig"), py::arg("N"), py::arg("a"), py::arg("fit"), py::arg("M"), py::arg("A"), py::arg("B"), py::arg("f"));
+	torus.def("LevMar", &LevMar, py::arg("x"), py::arg("y"), py::arg("sig"), py::arg("N"), py::arg("a"), py::arg("fit"), py::arg("M"), py::arg("f"), py::arg("dcmax"), py::arg("itmax"));
+	torus.def("gauss_fit", &gauss_fit, py::arg("x"), py::arg("p"), py::arg("df"), py::arg("D"));
+	torus.def("FitGauss", &FitGauss, py::arg("x"), py::arg("y"), py::arg("dy"), py::arg("N"), py::arg("p"), py::arg("f"));
 }
+
 
