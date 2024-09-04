@@ -1,12 +1,66 @@
 #include "../../Torus/src/utils/WDMath.h"
+
 namespace py = pybind11;
-void init_constants(py::module_ &torus) {
+const int    maxit  = 100;
+const double fpmin  = 1.e-40,
+             eps    = 1.e-9,
+	     logeps =-20.72326583694641115616192309216;
+
+
+static void gser(double& gamser, const double a, const double x, double& lng) {
+    lng=LogGamma(a);
+    if(x<=0.) {
+	if(x<0.) MathError("x<0 in gser()");
+	gamser=0.;
+	return;
+    }
+    int    n;
+    double sum,del,ap;
+    ap  = a;
+    del = sum = 1.0/a;
+    for(n=1; n<=maxit; n++) {
+	++ap;
+	del *= x/ap;
+	sum += del;
+	if(WDabs(del) < WDabs(sum)*eps) {
+	    gamser = sum*exp(-x+a*log(x)-lng);
+	    return;
+	}
+    }
+    MathError("a too large, maxit too small in gser()");
+}
+
+static void gcf(double& gammcf, double a, double x, double& lng) {
+    int i;
+    double an,b,c,d,del,h;
+
+    lng = LogGamma(a);
+    b   = x+1.-a;
+    c   = 1./fpmin;
+    d   = 1./b;
+    h   = d;
+    for(i=1; i<=maxit; i++) {
+	an =-i*(i-a);
+	b += 2.;
+	d  = an*d+b; if(WDabs(d)<fpmin) d=fpmin;
+	c  = b+an/c; if(WDabs(c)<fpmin) c=fpmin;
+	d  = 1./d;
+	del= d*c;
+	h *= del;    if(WDabs(del-1.)<eps) break;
+    }
+    if(i>maxit) MathError("a too large, maxit too small in gcf()");
+    gammcf = exp(-x+a*log(x)-lng) * h;
+}
+
+void init_wdmath(py::module_ &torus) {
 	torus.attr("EulerGamma") = EulerGamma;
 	torus.attr("LogofTwo") = LogofTwo;
 	torus.attr("LogofTwoInv") = LogofTwoInv;
 	torus.attr("LogofTen") = LogofTen;
 	torus.attr("LogofTenInv") = LogofTenInv;
 		// misc func
+	torus.def("gser", &gser);
+	torus.def("gcf", &gcf);
 	torus.def("MathError", &MathError);
 	torus.def("MathWarning", &MathWarning);
 	torus.def("SphVol", &SphVol);

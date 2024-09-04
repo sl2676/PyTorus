@@ -19,8 +19,12 @@
 #include "./src/utils/wrap_chb.cpp"
 #include "./src/utils/wrap_vector.cpp"
 #include "./src/utils/wrap_matrix.cpp"
-//#include "./src/utils/wrap_pjmebf.cpp"
 #include "./src/utils/wrap_numerics.cpp"
+#include "./src/utils/wrap_wdmath.cpp"
+#include "./src/utils/wrap_PJMNum.cpp"
+#include "./src/utils/wrap_numerics_templates.cpp"
+//#include "./src/utils/wrap_PJMCoords.cpp"
+//#include "./src/utils/wrap_pspline.cpp"
 
 void init_pi(py::module_ &);
 void init_units(py::module_ &);
@@ -32,6 +36,10 @@ void init_vector(py::module_ &);
 void init_matrix(py::module_ &);
 //void init_pjmebf(py::module_ &);
 void init_numerics(py::module_ &);
+void init_wdmath(py::module_ &);
+void init_pjmnum(py::module_ &);
+void init_pjmcoords(py::module_ &);
+//void init_pspline(py::module_ &);
 
 namespace py = pybind11;
 using namespace std;
@@ -48,6 +56,11 @@ PYBIND11_MODULE(PyTorus, torus) {
 	init_matrix(torus);
   //init_chb(torus);
 	init_numerics(torus);
+	init_wdmath(torus);
+	init_pjmnum(torus);
+	init_numerics_templates(torus);
+//	init_pjmcoords(torus);
+	//init_pspline(torus);
 }
 
 

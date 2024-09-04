@@ -660,6 +660,7 @@ public:
     std::unique_ptr<BaseVector> baseVec;
 
     explicit PyVector(std::unique_ptr<BaseVector> vec) : baseVec(std::move(vec)) {}
+/*
 	PyVector(py::args args) {
 		if (args.empty()) {
 			throw std::runtime_error("Arguments cannot be empty");
@@ -701,6 +702,62 @@ public:
 			baseVec = std::make_unique<TypedVector<std::complex<double>>>(values);
 		}
 	}
+*/
+
+	PyVector(py::args args) {
+    if (args.empty()) {
+        throw std::runtime_error("Arguments cannot be empty");
+    }
+
+    bool has_int = false, has_float = false, has_bool = false;
+
+    for (auto item : args) {
+        if (py::isinstance<py::bool_>(item)) {
+            has_bool = true;
+        } else if (py::isinstance<py::float_>(item)) {
+            has_float = true;
+        } else if (py::isinstance<py::int_>(item)) {
+            has_int = true;
+        } else {
+            has_int = false;
+            has_float = false;
+            has_bool = false;
+            break;
+        }
+    }
+
+    if (has_bool) {
+        std::vector<bool> values;
+        for (auto item : args) {
+            values.push_back(item.cast<bool>());
+        }
+        std::vector<int> int_values(values.begin(), values.end());
+        baseVec = std::make_unique<TypedVector<int>>(int_values); // Use int to represent boolean internally
+    } else if (has_float) {
+        std::vector<double> values;
+        for (auto item : args) {
+            values.push_back(item.cast<double>());
+        }
+        baseVec = std::make_unique<TypedVector<double>>(values);
+    } else if (has_int) {
+        std::vector<int> values;
+        for (auto item : args) {
+            values.push_back(item.cast<int>());
+        }
+        baseVec = std::make_unique<TypedVector<int>>(values);
+    } else {
+        std::vector<std::complex<double>> values;
+        for (auto item : args) {
+            if (py::isinstance<py::int_>(item) || py::isinstance<py::float_>(item)) {
+                values.push_back(std::complex<double>(item.cast<double>(), 0));
+            } else {
+                values.push_back(item.cast<std::complex<double>>());
+            }
+        }
+        baseVec = std::make_unique<TypedVector<std::complex<double>>>(values);
+    }
+}
+
 
 	size_t size() const {
         if (!baseVec) throw std::runtime_error("Vector is uninitialized");

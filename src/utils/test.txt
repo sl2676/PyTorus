@@ -1,38 +1,16 @@
-.def("__mul__", [](const PyVector& self, float scalar) -> PyVector {
-167             if (py::isinstance<py::int_>(scalar)) {
-168                 return self * scalar.cast<int>();
-169             } else if (py::isinstance<py::float_>(scalar)) {
-170                 return self * scalar.cast<float>();
-171             } else if (py::isinstance<py::complex>(scalar)) {
-172                 return self * scalar.cast<std::complex<float>>();
-173             } else {
-174                 throw std::runtime_error("Unsupported scalar type for multiplication");
-175         }, "Multiply each component of the vector by a scalar")
-176 
-177         .def("__rmul__", [](const PyVector& self, float scalar) -> PyVector {
-178                 if (py::isinstance<py::int_>(scalar)) {
-179         int value = scalar.cast<int>();
-180         return self * value;
-181     } else if (py::isinstance<py::float_>(scalar)) {
-182         float value = scalar.cast<float>();
-183         return self * value;
-184     } else if (py::isinstance<py::complex>(scalar)) {
-185         std::complex<float> value = scalar.cast<std::complex<float>>();
-186         return self * value;
-187     } else {
-188         throw std::runtime_error("Unsupported scalar type for multiplication");
-189     }
-190         }, "Support scalar multiplication from the left side")
-191 
-192         .def("__add__", [](const PyVector& self, float scalar) -> PyVector {
-193             if (py::isinstance<py::int_>(scalar)) {
-194                 return self.add_scalar(scalar);
-195             } else if (py::isinstance<py::float_>(scalar)) {
-196                 return self.add_scalar(scalar);
-197             } else if (py::isinstance<py::complex>(scalar)) {
-198                 return self.add_scalar(scalar);
-199             } else {
-200                 throw std::runtime_error("Unsupported scalar type for multiplication");
-201             }
-202    
-203         }, "Add a scalar to each component of the vector")
+Arguments:
+
+void(*funcd)(S, S&, S&):
+This is a pointer to a function that calculates the function value and its derivative at a given point. The function signature should be void funcd(S x, S& f, S& df), where:
+x is the point at which the function and its derivative are evaluated.
+f is an output parameter that will store the function value at x.
+df is an output parameter that will store the derivative of the function at x.
+const S x1:
+The lower bound of the interval where the root is bracketed.
+const S x2:
+The upper bound of the interval where the root is bracketed.
+const S xacc:
+The desired accuracy for the root. The algorithm will stop iterating when the change in the root estimate is smaller than this value.
+Explanation
+
+double x1, x2, xacc

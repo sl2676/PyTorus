@@ -1,0 +1,37 @@
+
+def test_wdabs():
+    print("WDabs(5):", your_module_name.WDabs(5))          
+    print("WDabs(-5):", your_module_name.WDabs(-5))        
+
+    print("WDabs(5.5):", your_module_name.WDabs(5.5))      
+    print("WDabs(-5.5):", your_module_name.WDabs(-5.5))    
+
+    import cmath
+    c = complex(3, 4)
+    print("WDabs(c):", your_module_name.WDabs(c))          #
+
+    try:
+        print("WDabs('string'):", your_module_name.WDabs('string'))
+    except Exception as e:
+        print("Exception:", e)
+
+if __name__ == "__main__":
+    test_wdabs()
+import math
+
+def func(x):
+    return x * x - 2  
+
+def test_rtsafe():
+    try:
+        #find root of func(x) = x^2 - 2
+        root = your_module_name.rtsafe(func, 0, 2, 1e-5)
+        print(f"Root found: {root}")
+        expected_root = math.sqrt(2)
+        print(f"Expected root: {expected_root}")
+        print(f"Difference: {abs(root - expected_root)}")
+    except Exception as e:
+        print("Exception:", e)
+
+if __name__ == "__main__":
+    test_rtsafe()
