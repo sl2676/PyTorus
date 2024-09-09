@@ -38,13 +38,10 @@ std::string put_single_wrapper(const float x) {
 std::string getFORTRAN_two_Wrapper(const std::vector<std::vector<float>>& x) {
     std::ostringstream to;
     int C = 0;
-    // Determine the dimensions of the 2D vector
     int n[2] = {static_cast<int>(x.size()), x.empty() ? 0 : static_cast<int>(x[0].size())};
 
-    // Iterate in column-major order
     for (int j = 0; j < n[1]; ++j) {
         for (int i = 0; i < n[0]; ++i, ++C) {
-            // Check if the current row has the expected number of columns
             if (x[i].size() != n[1]) {
                 throw std::invalid_argument("Inconsistent number of columns in 2D array input.");
             }
@@ -63,11 +60,10 @@ std::string getFORTRAN_three_Wrapper(const std::vector<std::vector<std::vector<f
                 x.empty() ? 0 : static_cast<int>(x[0].size()), 
                 x.empty() || x[0].empty() ? 0 : static_cast<int>(x[0][0].size())};
     int C = 0;
-    // FORTRAN-like column-major order: k, j, i
     for (int k = 0; k < n[2]; ++k) {
         for (int j = 0; j < n[1]; ++j) {
             for (int i = 0; i < n[0]; ++i, ++C) {
-                put(x[i][j][k], to); // Adjust based on actual memory layout
+                put(x[i][j][k], to); 
                 if (C >= 14 && (i < n[0] - 1 || j < n[1] - 1 || k < n[2] - 1)) {
                     C = -1;
                     to << '\n';
@@ -78,7 +74,6 @@ std::string getFORTRAN_three_Wrapper(const std::vector<std::vector<std::vector<f
     return to.str();
 }
 std::vector<std::vector<float>> getFORTRAN_two_routine_Wrapper(const std::string& inputData, const std::vector<int>& n) {
-    // Ensure the dimensions are valid
     if (n.size() != 2) {
         throw std::invalid_argument("Dimension array must have exactly two elements.");
     }
@@ -89,10 +84,8 @@ std::vector<std::vector<float>> getFORTRAN_two_routine_Wrapper(const std::string
     
     Alloc2D(x, nArray);
 
-    // Assuming `get` is defined to read from `in` and fill `x` in FORTRAN order
     get(x, nArray, in);
 
-    // Convert C++ 2D array back to a Python-friendly vector of vectors
     std::vector<std::vector<float>> result(n[0], std::vector<float>(n[1]));
     for (int i = 0; i < n[0]; ++i) {
         for (int j = 0; j < n[1]; ++j) {
@@ -113,10 +106,8 @@ std::vector<std::vector<std::vector<float>>> getFORTRAN_three_routine_Wrapper(co
     Alloc3D(x, n);
 
     std::istringstream inStream(inputData);
-    // Assuming `get` fills `x` with data in FORTRAN order
     get(x, n, inStream);
 
-    // Convert C++ 3D array to Python-friendly structure
     std::vector<std::vector<std::vector<float>>> result(n[0], std::vector<std::vector<float>>(n[1], std::vector<float>(n[2])));
     for (int i = 0; i < n[0]; ++i) {
         for (int j = 0; j < n[1]; ++j) {
@@ -146,7 +137,7 @@ float uncompress_wrapper(const std::string& input) {
 
 std::string Put_one_Wrapper(const std::vector<float>& x) {
     std::ostringstream to;
-    int C = 0; // Counter for the current line length
+    int C = 0; 
     for (unsigned long k = 0; k < x.size(); ++k) {
         float xk = x[k];
         if (xk == 0.f) {
@@ -154,16 +145,15 @@ std::string Put_one_Wrapper(const std::vector<float>& x) {
                 to << '\n';
                 C = 0;
             }
-            to << char(95); // Write out '_'
+            to << char(95); 
             C++;
         } else {
             if (C > 75) {
                 to << '\n';
                 C = 0;
             }
-            // Assuming put compresses and writes the float xk
             put(xk, to);
-            C += 5; // Assuming compressed float results in 5 chars
+            C += 5; 
         }
     }
     return to.str();
@@ -171,7 +161,7 @@ std::string Put_one_Wrapper(const std::vector<float>& x) {
 
 std::string Put_two_Wrapper(const std::vector<std::vector<float>>& x) {
     std::ostringstream to;
-    int C = 0; // Counter for current line length
+    int C = 0; 
     for (size_t i = 0; i < x.size(); ++i) {
         for (size_t j = 0; j < x[i].size(); ++j) {
             float xk = x[i][j];
@@ -180,15 +170,15 @@ std::string Put_two_Wrapper(const std::vector<std::vector<float>>& x) {
                     to << '\n';
                     C = 0;
                 }
-                to << char(95); // Write out '_'
+                to << char(95); 
                 C++;
             } else {
                 if (C > 75) {
                     to << '\n';
                     C = 0;
                 }
-                put(xk, to); // Compress and output the non-zero float
-                C += 5; // Assuming compressed output is 5 characters
+                put(xk, to); 
+                C += 5; 
             }
         }
     }
@@ -197,7 +187,7 @@ std::string Put_two_Wrapper(const std::vector<std::vector<float>>& x) {
 
 std::string Put_three_Wrapper(const std::vector<std::vector<std::vector<float>>>& x) {
     std::ostringstream to;
-    int C = 0; // Counter for the current line length
+    int C = 0; 
     for (const auto& layer : x) {
         for (const auto& row : layer) {
             for (const auto& val : row) {
@@ -206,15 +196,15 @@ std::string Put_three_Wrapper(const std::vector<std::vector<std::vector<float>>>
                         to << '\n';
                         C = 0;
                     }
-                    to << char(95); // Write out '_'
+                    to << char(95); 
                     C++;
                 } else {
                     if (C > 75) {
                         to << '\n';
                         C = 0;
                     }
-                    put(val, to); // Compress and output the non-zero float
-                    C += 5; // Assuming compressed output is 5 characters
+                    put(val, to); 
+                    C += 5; 
                 }
             }
         }
@@ -231,7 +221,6 @@ void init_compress(py::module_ &torus) {
 	torus.def("uncompress", &uncompress_wrapper);
 	torus.def("uncompress", py::overload_cast<char*, float*, const int>(&uncompress));
 	torus.def("uncompress", py::overload_cast<char*, double*, const int>(&uncompress));
-		// 2 compressed in and output
 	torus.def("put", &put_single_wrapper);
 	torus.def("put", &put_double_wrapper);	
 	torus.def("put", &put_three_wrapper);

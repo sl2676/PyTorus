@@ -19,10 +19,8 @@
 #include <complex>
 #include <algorithm>
 #include <sstream>
-//#include "./wrap_matrix.cpp"
 #include "../../Torus/src/utils/Vector.h"
 #include "../../Torus/src/utils/Compress.h"
-//#include "wrap_matrix.cpp"
 namespace py = pybind11;
 
 class PyMatrix;
@@ -660,49 +658,6 @@ public:
     std::unique_ptr<BaseVector> baseVec;
 
     explicit PyVector(std::unique_ptr<BaseVector> vec) : baseVec(std::move(vec)) {}
-/*
-	PyVector(py::args args) {
-		if (args.empty()) {
-			throw std::runtime_error("Arguments cannot be empty");
-		}
-		bool has_int = false, has_float = false;
-		
-		for (auto item : args) {
-			if (py::isinstance<py::float_>(item)) {
-				has_float = true;
-			} else if (py::isinstance<py::int_>(item)) {
-				has_int = true;
-			} else {
-				has_int = false;
-				has_float = false;
-				break;
-			}
-		}
-		if (has_float) {
-			std::vector<double> values;
-			for (auto item : args) {
-				values.push_back(item.cast<double>());
-			}
-			baseVec = std::make_unique<TypedVector<double>>(values);
-		} else if (has_int) {
-			std::vector<int> values;
-			for (auto item : args) {
-				values.push_back(item.cast<int>());
-			}
-			baseVec = std::make_unique<TypedVector<int>>(values);
-		} else {
-			std::vector<std::complex<double>> values;
-			for (auto item : args) {
-				if (py::isinstance<py::int_>(item) || py::isinstance<py::float_>(item)) {       
-					values.push_back(std::complex<double>(item.cast<double>(), 0));
-				} else {
-					values.push_back(item.cast<std::complex<double>>());
-				}
-			}
-			baseVec = std::make_unique<TypedVector<std::complex<double>>>(values);
-		}
-	}
-*/
 
 	PyVector(py::args args) {
     if (args.empty()) {
@@ -732,7 +687,7 @@ public:
             values.push_back(item.cast<bool>());
         }
         std::vector<int> int_values(values.begin(), values.end());
-        baseVec = std::make_unique<TypedVector<int>>(int_values); // Use int to represent boolean internally
+        baseVec = std::make_unique<TypedVector<int>>(int_values); 
     } else if (has_float) {
         std::vector<double> values;
         for (auto item : args) {
@@ -1089,41 +1044,6 @@ public:
 			return divIntVectors(aInt, bInt);
 		}
 	}
-/*
-	PyVector operator*(const PyMatrix& matrix) const {
-        return std::visit([this](const auto& matrixImpl) -> PyVector {
-            using MatrixType = typename std::decay<decltype(*matrixImpl)>::type;
-            using ValueType = typename MatrixType::ValueType;
-
-            // Ensure vector and matrix dimensions are compatible
-            if (this->size() != matrixImpl->getRows()) {
-                throw std::runtime_error("Dimension mismatch for multiplication.");
-            }
-
-            // Resulting vector of the multiplication
-            std::vector<ValueType> result(matrixImpl->getCols(), ValueType(0));
-
-            // Perform matrix-vector multiplication
-            for (size_t col = 0; col < matrixImpl->getCols(); ++col) {
-                for (size_t row = 0; row < matrixImpl->getRows(); ++row) {
-                    result[col] += matrixImpl->getValueAt(row, col) * this->at<ValueType>(row);
-                }
-            }
-
-            return PyVector(std::make_shared<TypedVector<ValueType>>(result));
-        }, matrix.getMatrixVariant());
-    }
-
-    // Helper template to access vector elements with type checking
-    template<typename T>
-    T at(size_t index) const {
-        auto typedVec = std::dynamic_pointer_cast<TypedVector<T>>(vector);
-        if (!typedVec) {
-            throw std::runtime_error("Type mismatch when accessing vector elements.");
-        }
-        return typedVec->data[index];
-    }
-*/
 	py::object __getitem__(int index) const {
     	if (!baseVec) throw py::index_error("Vector is uninitialized.");
 		size_t adjusted_index = static_cast<size_t>(index);
@@ -1456,7 +1376,6 @@ void init_vector(py::module_ &m) {
             		auto element = tuple[i];
             		if (py::isinstance<py::float_>(element)) {
                 		double value = element.cast<double>();
-//                		ss << std::fixed << std::setprecision(6) << value; 
             			ss << value;
 					} else {
                 		ss << py::str(element).cast<std::string>();

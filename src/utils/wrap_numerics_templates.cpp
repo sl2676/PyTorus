@@ -299,24 +299,148 @@ py::object polint(const PyVector& xa, const PyVector& ya, const int n, const py:
 	y = p.__getitem__(0);
 	return y;	
 }
-py::object polev(py::object x, const PyVector& xarr, const int n, const int m=4) {
-	int j, M=find_for_polev(j, n, m, xarr, x);
-	return polint(xarr+j, yarr+j, M, x);
+
+py::object polev(py::object x, const PyVector& xarr, const PyVector& yarr, const int n, const int m=4) {
+	const auto& x_vec = xarr.getBaseVector();
+	const auto& y_vec = yarr.getBaseVector();
+	
+	const auto& x_typed_vec = dynamic_cast<const TypedVector<double>&>(*x_vec);
+	const auto& y_typed_vec = dynamic_cast<const TypedVector<double>&>(*y_vec);
+	
+	int j, M = find_for_polev(j, n, m, xarr, x);
+	
+	auto x_iter = std::next(x_typed_vec.vec.begin(), j);
+	auto y_iter = std::next(y_typed_vec.vec.begin(), j);
+
+	return polint(xarr, yarr, M, x);
+}
+// broken shit
+py::object polev_2d(const PyVector& xi, PyMatrix& xarr, PyMatrix& yarr, const PyVector& n, const PyVector& m = PyVector(py::make_tuple(0, 0))) {
+    std::vector<int> j(2);
+    std::vector<int> M(2);
+
+    if (m.__getitem__(0).cast<int>() > 0 && m.__getitem__(1).cast<int>() > 0) {
+        M[0] = find_for_polev(j[0], n.__getitem__(0).cast<int>(), m.__getitem__(0).cast<int>(), xarr.getRowAsPyVector(0), xi.__getitem__(0));
+        M[1] = find_for_polev(j[1], n.__getitem__(1).cast<int>(), m.__getitem__(1).cast<int>(), xarr.getRowAsPyVector(1), xi.__getitem__(1));
+    } else {
+        M[0] = find_for_polev(j[0], n.__getitem__(0).cast<int>(), 4, xarr.getRowAsPyVector(0), xi.__getitem__(0));
+        M[1] = find_for_polev(j[1], n.__getitem__(1).cast<int>(), 4, xarr.getRowAsPyVector(1), xi.__getitem__(1));
+    }
+
+    PyVector y0 = PyVector(py::make_tuple()); 
+	y0.initialize(M[0], 0.0);  
+
+    for (int l = 0; l < M[0]; ++l) {
+        PyVector x_subvector = xarr.getRowAsPyVector(1 + j[1]);  
+        PyVector y_subvector = yarr.getRowAsPyVector(j[0] + l);  
+
+        y0.__setitem__(l, polint(x_subvector, y_subvector, M[1], xi.__getitem__(1)));  
+    }
+
+    PyVector x_subvector_0 = xarr.getRowAsPyVector(0);  
+    py::object result = polint(x_subvector_0, y0, M[0], xi.__getitem__(0));  
+
+    return result;
+}
+// py::object polint(const PyVector& xa, const PyVector& ya, const int n, const py::object x)
+// int find_for_polev(int& j, const int n, const int m, const PyVector& x, const py::object xi)
+// broken shit
+py::object polev_3d(const PyVector& xi, PyMatrix& xarr, PyMatrix& yarr, const PyVector& n, const PyVector& m = PyVector(py::make_tuple(0, 0, 0))) {
+	std::vector<int> j(3);
+	std::vector<int> M(3);
+
+	if (m.__getitem__(0).cast<int>() > 0 && m.__getitem__(1).cast<int>() > 0 && m.__getitem__(2).cast<int>() > 0) {
+		M[0] = find_for_polev(j[0], n.__getitem__(0).cast<int>(), m.__getitem__(0).cast<int>(), xarr.getRowAsPyVector(0), xi.__getitem__(0));
+		M[1] = find_for_polev(j[1], n.__getitem__(1).cast<int>(), m.__getitem__(1).cast<int>(), xarr.getRowAsPyVector(1), xi.__getitem__(1));
+		M[2] = find_for_polev(j[2], n.__getitem__(2).cast<int>(), m.__getitem__(2).cast<int>(), xarr.getRowAsPyVector(2), xi.__getitem__(2));
+	} else {
+		M[0] = find_for_polev(j[0], n.__getitem__(0).cast<int>(), 4, xarr.getRowAsPyVector(0), xi.__getitem__(0));
+		M[1] = find_for_polev(j[1], n.__getitem__(1).cast<int>(), 4, xarr.getRowAsPyVector(1), xi.__getitem__(1));
+		M[2] = find_for_polev(j[2], n.__getitem__(2).cast<int>(), 4, xarr.getRowAsPyVector(2), xi.__getitem__(2));
+	}
+
+	int k0, k1;
+	
+	PyVector y0 = PyVector(py::make_tuple());
+	PyVector y1 = PyVector(py::make_tuple());
+	y0.initialize(M[0], 0.0);
+	y1.initialize(M[1], 0.0);
+	
+	for (k0 = 0; k0 < M[0]; ++k0) {
+		for (k1 = 0; k1 < M[1]; ++k1) {
+			PyVector x_subvector = xarr.getRowAsPyVector(2 + j[2]);
+			PyVector y_subvector = yarr.getRowAsPyVector(j[0] + k0);
+			
+			y1.__setitem__(k1, polint(x_subvector, y_subvector, M[2], xi.__getitem__(2)));
+			y0.__setitem__(k0, polint(x_subvector, y_subvector, M[1], xi.__getitem__(1)));
+		}
+	}	
+	PyVector xarr_subvector_outer = xarr.getRowAsPyVector(0 + j[0]);
+	py::object y = polint(xarr_subvector_outer, y0, M[0], xi.__getitem__(0));
+	return y;
 }
 
+void Spline(const PyVector& x, const PyVector& y, int const n, PyVector& y2, py::object yp1, py::object ypn) {
+	double zero = 0., half = 0.5, one = 1., two = 2., three = 3., six=6.;
+	int i;
+	py::object qn, p, sig, dx, dx1, dx2, dy, dy1, un;
+	std::vector<py::object> u(n-1);
+	std::vector<py::object> v(n-1);
+	
+	dx = x.__getitem__(1) - x.__getitem__(0);
+	dy = y.__getitem__(1) - y.__getitem__(1); 
+	
+	if (yp1) {
+		v[0] =- py::cast(half);
+		u[0] = py::cast(three)/dx * (dy/dx - *yp1);
+	} else {
+		u[0] = v[0] = py::cast(zero);
+		for (i = 1; i < n-1; i++) {
+			dx1 = x.__getitem__(i+1) - x.__getitem__(i);
+			dx2 = x.__getitem__(i+1) - x.__getitem__(i-1);
+			dy1 = y.__getitem__(i + 1) - y.__getitem__(i);
+			sig = dx/ dx2;
+			p = sig*v[i-1]+py::cast(two);
+			v[i] = (sig-py::cast(one))/p;
+			u[i] = (py::cast(six)*(dy1/dx1-dy/dx)/dx2 - sig*u[i-1]) / p;
+			dx = dx1;
+			dy = dy1;
+		}
+		if (ypn) {
+			qn = py::cast(half);
+			un = py::cast(three)/dx * (*ypn - dy/dx);
+		} else {
+			un = qn = py::cast(zero);
+			y2.__setitem__(n-1, (un-qn*u[n-2]) / (qn*v[n-2]+py::cast(one)));
+			for (i = n - 2; i >= 0; i--) {
+				y2.__setitem__(i, v[i]*y2.__getitem__(i+1) + u[i]);
+			}
+		}
+	}
+}
 
 void init_numerics_templates(py::module_ &torus) {
-	torus.def("find_for_polev", [](int& j, const int n, const int m, const PyVector& x, const py::object xi) {
+	torus.def("Spline", [](const PyVector& x, const PyVector& y, int const n, PyVector& y2, py::object yp1, py::object ypn) {
+		return Spline(x, y, n, y2, yp1, ypn);
+	});
+	torus.def("polev_3d", [](const PyVector& xi, PyMatrix& xarr, PyMatrix& yarr, const PyVector& n, const PyVector& m = PyVector(py::make_tuple(0, 0, 0))) {
+		return polev_3d(xi, xarr, yarr, n, m);
+	});
+	torus.def("polev_2d", [](const PyVector& xi, PyMatrix& xarr, PyMatrix& yarr, const PyVector& n, const PyVector& m = PyVector(py::make_tuple(0, 0))) {
+		return polev_2d(xi, xarr, yarr, n, m);
+	});
+	torus.def("find_for_polev", [](int &j, const int n, const int m, const PyVector& x, const py::object xi) {
 		return find_for_polev(j, n, m, x, xi);
 	});
-	torus.def("polev", [](py::object x, const PyVector& xarr, const int n, const int m=4) {
-		return polev(x, xarr, n, m);
+	torus.def("polev", [](py::object x, const PyVector& xarr, const PyVector& yarr, const int n, const int m=4) {
+		return polev(x, xarr, yarr, n, m);
 	});
 	torus.def("polint", [](const PyVector& xa, const PyVector& ya, const int n, const py::object x) {
 		return polint(xa, ya, n, x);
 	});
+
 	torus.def("WDabs", [](const py::object& x) {
-        return WDabs(x);
+		return WDabs(x);
     });
 	torus.def("sign", [](const py::object& x) {
 		return sign(x);

@@ -31,17 +31,17 @@ void init_chb(py::module_ &torus) {
     		return y;
 		})
 		.def("unfitderiv", [](const Cheby &self, double x) {
-            double y, dy, d2y, d3y; // For the most detailed overload
+            double y, dy, d2y, d3y; 
             self.unfitderiv(x, y, dy, d2y, d3y);
             return py::make_tuple(y, dy, d2y, d3y);
         })
         .def("unfitderiv", [](const Cheby &self, double x) {
-            double y, dy, d2y; // For the second overload
+            double y, dy, d2y; 
             self.unfitderiv(x, y, dy, d2y);
             return py::make_tuple(y, dy, d2y);
         })
         .def("unfitderiv", [](const Cheby &self, double x) {
-            double y, dy; // For the simplest overload
+            double y, dy; 
             self.unfitderiv(x, y, dy);
             return py::make_tuple(y, dy);
         });

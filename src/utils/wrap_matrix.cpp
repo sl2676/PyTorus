@@ -286,11 +286,6 @@ public:
 
     	matrixVariant = std::move(newMatrixVariant);
 	}
-/*	
-	MatrixVariant& getMatrixVariant() {
-		return matrixVariant;
-	}
-*/
 	template<typename Scalar, typename Function>
 	PyMatrix& elementWiseOperation(Scalar scalar, Function func) {
     	std::visit([&](auto& matrixPtr) {
@@ -1516,70 +1511,6 @@ public:
         return PyMatrix(transposedVariant);
     }
 
-/*
-// Fixes the precision. 
-	static void GaussInvert(PyMatrix& matrix) {
-    	matrix.promoteMatrixVariantIfNeeded<double>();
-
-    	auto& variant = matrix.getMatrixVariant();
-    	auto matrixPtr = std::get_if<std::shared_ptr<MatrixImpl<double>>>(&variant);
-    	if (!matrixPtr) {
-        	throw std::runtime_error("Matrix type promotion to double failed or unsupported type.");
-    	}
-
-    	auto& A = *matrixPtr;
-    	size_t N = A->getRows();
-    	if (N != A->getCols()) {
-        	throw std::runtime_error("Matrix must be square to invert.");
-    	}
-
-    	std::vector<std::vector<double>> augmented(N, std::vector<double>(2 * N, 0.0));
-    	for (size_t i = 0; i < N; ++i) {
-        	for (size_t j = 0; j < N; ++j) {
-            	augmented[i][j] = A->getValueAt(i, j);
-        	}
-        	augmented[i][N + i] = 1.0;
-    	}
-
-    for (size_t k = 0; k < N; ++k) {
-        size_t maxRow = k;
-        for (size_t i = k + 1; i < N; ++i) {
-            if (std::abs(augmented[i][k]) > std::abs(augmented[maxRow][k])) {
-                maxRow = i;
-            }
-        }
-
-        std::swap(augmented[k], augmented[maxRow]);
-
-        double pivot = augmented[k][k];
-        for (size_t j = k; j < 2 * N; ++j) {
-            augmented[k][j] /= pivot;
-            if (std::abs(augmented[k][j]) < 1e-10) {
-                augmented[k][j] = 0.0;
-            }
-        }
-
-        for (size_t i = 0; i < N; ++i) {
-            if (i != k) {
-                double factor = augmented[i][k];
-                for (size_t j = k; j < 2 * N; ++j) {
-                    augmented[i][j] -= factor * augmented[k][j];
-                    if (std::abs(augmented[i][j]) < 1e-10) {
-                        augmented[i][j] = 0.0;
-                    }
-                }
-            }
-        }
-    }
-
-    // Extract the inverse from the augmented matrix
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            A->setValueAt(i, j, augmented[i][j + N]);
-        }
-    }
-}
-*/
 
 	static void GaussInvert(PyMatrix& matrix) {
     	bool hasComplex = std::visit([](const auto& arg) -> bool {

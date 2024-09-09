@@ -263,13 +263,13 @@ void OmniCoords::GCAfromGCY() {
 
 void OmniCoords::LSRfromGCA() {
     static double z = 0.0, s = 0.0, c = 1.0;
-    rv[3].__setitem__(0, py::float_(Rsun - rv[4].__getitem__(0).cast<double>()));   // note switch in sign
-    rv[3].__setitem__(1, py::float_(-rv[4].__getitem__(1).cast<double>()));        //       ditto
+    rv[3].__setitem__(0, py::float_(Rsun - rv[4].__getitem__(0).cast<double>()));   
+    rv[3].__setitem__(1, py::float_(-rv[4].__getitem__(1).cast<double>()));        
     rv[3].__setitem__(2, py::float_(rv[4].__getitem__(2).cast<double>() - zsun));
     rv[3].__setitem__(3, py::float_(-rv[4].__getitem__(3).cast<double>()));
     rv[3].__setitem__(4, py::float_(vcsun - rv[4].__getitem__(4).cast<double>()));
     rv[3].__setitem__(5, rv[4].__getitem__(5));
-    if (zsun) { // need to rotate a bit for GC to have rv[3][2]=0
+    if (zsun) { 
         double t;
         if (z != zsun) {
             z = zsun;
@@ -289,7 +289,7 @@ void OmniCoords::LSRfromGCA() {
 
 void OmniCoords::GCAfromLSR() {
     static double z = 0.0, s = 0.0, c = 1.0;
-    if (zsun) { // need to rotate a bit for GC to have rv[3][2]=0
+    if (zsun) { 
         PyVector in = std::move(rv[3]);
         double t;
         if (z != zsun) {
@@ -436,19 +436,6 @@ void OmniCoords::SetTrans() {
         {szt * cth * cZe + czt * sZe, -szt * cth * sZe + czt * cZe, -szt * sth},
         {szt * cZe, -sth * sZe, cth}
     };
-/*
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            py::tuple index = py::make_tuple(i, j);
-            EtoP.__setitem__(index, py::float_(0.0));
-            for (int k = 0; k < 3; ++k) {
-                double current_value = EtoP.get_value(py::object(index)).cast<double>();  // Explicitly cast index to py::object
-				double newValue = current_value + GalactoConstants::EtoPJ2000[i][k] * P[k][j];
-                EtoP.__setitem__(index, py::float_(newValue));
-            }
-        }
-    }
-*/
 	for (int i = 0; i < 3; ++i) {
 		for (int j = 0; j < 3; ++j) {
 			EtoP.set_value(i, j, py::float_(0.0));
@@ -463,13 +450,11 @@ void OmniCoords::SetTrans() {
 }
 void OmniCoords::HEQfromHCA() {
     int i, j;
-    py::list h = py::list(6); // Initialize a Python list with 6 elements
+    py::list h = py::list(6); 
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            //h[i] = h[i].cast<double>() + rv[2].__getitem__(j).cast<double>() * EtoP.__getitem__(py::make_tuple(i, j)).cast<double>();
             h[i] = h[i].cast<double>() + rv[2].__getitem__(j).cast<double>() * EtoP.getValueAt(i, j).cast<double>();
-			//h[i + 3] = h[i + 3].cast<double>() + rv[2].__getitem__(j + 3).cast<double>() * EtoP.__getitem__(py::make_tuple(i, j)).cast<double>();
         	h[i + 3] = h[i + 3].cast<double>() + rv[2].__getitem__(j + 3).cast<double>() * EtoP.getValueAt(i, j).cast<double>();
 		}
     }
@@ -521,8 +506,6 @@ void OmniCoords::HCAfromHEQ() {
 
     for (i = 0; i < 3; ++i) {
         for (j = 0; j < 3; ++j) {
-            //rv[2].__setitem__(i, py::float_(rv[2].__getitem__(i).cast<double>() + h[j].cast<double>() * EtoP.__getitem__(py::make_tuple(j, i)).cast<double>()));
-            //rv[2].__setitem__(i + 3, py::float_(rv[2].__getitem__(i + 3).cast<double>() + h[j + 3].cast<double>() * EtoP.__getitem__(py::make_tuple(j, i)).cast<double>()));
         	rv[2].__setitem__(i, py::float_(rv[2].__getitem__(i).cast<double>() + h[j].cast<double>() * EtoP.getValueAt(i, j).cast<double>()));
 			rv[2].__setitem__(i + 3, py::float_(rv[2].__getitem__(i + 3).cast<double>() + h[j + 3].cast<double>() * EtoP.getValueAt(i, j).cast<double>()));
 		}
@@ -535,11 +518,11 @@ void init_pjmcoords(py::module_ &torus) {
 	py::class_<OmniCoords>(torus, "OmniCoords")
         .def(py::init<>())
 		.def(py::init<>())
-        .def("change_sol_pos", &OmniCoords::change_sol_pos)  // Binding for change_sol_pos
-        .def("change_vc", &OmniCoords::change_vc)            // Binding for change_vc
-        .def("change_vsol", &OmniCoords::change_vsol)        // Binding for change_vsol
-        .def("set_SBD10", &OmniCoords::set_SBD10)            // Binding for set_SBD10
-        .def("set_DB98", &OmniCoords::set_DB98)              // Binding for set_DB98
+        .def("change_sol_pos", &OmniCoords::change_sol_pos)  
+        .def("change_vc", &OmniCoords::change_vc)            
+        .def("change_vsol", &OmniCoords::change_vsol)        
+        .def("set_SBD10", &OmniCoords::set_SBD10)            
+        .def("set_DB98", &OmniCoords::set_DB98)              
         .def("change_epoch", &OmniCoords::change_epoch)	
 		.def("give_sol_pos", [](OmniCoords &self) {
             double r, z;
@@ -577,9 +560,9 @@ void init_pjmcoords(py::module_ &torus) {
         .def("give_LSR_units", &OmniCoords::give_LSR_units)
         .def("give_GCA_units", &OmniCoords::give_GCA_units)
         .def("give_GCY_units", &OmniCoords::give_GCY_units)
-		.def("give", &OmniCoords::give)                  // Binding for give(int)
+		.def("give", &OmniCoords::give)                  
         .def("give_units", &OmniCoords::give_units)
-		.def("take_HEQ", [](OmniCoords &self, vec6 &v) {  // Binding for take_HEQ(vec6&&)
+		.def("take_HEQ", [](OmniCoords &self, vec6 &v) {  
             self.take_HEQ(std::move(v));
         })	
 		.def("take_HGP", [](OmniCoords &self, vec6 &v) { 
