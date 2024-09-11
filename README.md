@@ -4,7 +4,7 @@
 
 ## Overview
 
-**Torus Mapper** is a Python package designed to model the dynamics of galaxies using the torus mapping method. The core functionality is implemented in **C++** for high performance, and exposed to Python using **pybind11**, enabling seamless integration and ease of use. This combination ensures both computational efficiency and user-friendly interaction for scientific computing tasks.
+**Torus Mapper** is a Python package designed to model the dynamics of galaxies using the torus mapping method. The core functionality is implemented in **C++** for high performance, and exposed to Python using **pybind11**. This combination ensures both computational efficiency and user-friendly interaction for scientific computing tasks.
 
 The package allows users to compute orbital tori based on action integrals and provides robust tools for analyzing orbits in dynamical systems. By utilizing C++ for the heavy numerical operations and Python for high-level scripting, Torus Mapper offers the best of both worlds—performance and flexibility.
 
@@ -13,7 +13,6 @@ The package allows users to compute orbital tori based on action integrals and p
 - Efficient computation of orbital tori using **C++** back-end for performance-critical tasks.
 - Python bindings implemented via **pybind11**, providing an intuitive interface for Python users.
 - Custom **C++** matrix and vector operations, optimized for handling various data types and large-scale computations.
-- Seamless integration of C++ and Python, allowing Python scripts to leverage high-performance C++ code for tasks such as matrix operations and orbit analysis.
 - Time-averaged density and velocity calculations, ideal for N-body simulations and resonance trapping studies.
 - Flexibility in setting up initial conditions for dynamical models, with a focus on astronomical applications.
 
@@ -22,18 +21,76 @@ The package allows users to compute orbital tori based on action integrals and p
 Install the package using pip:
 
 ```bash
-pip install torus-mapper
+pip install PyTorus
 ```
 ## Getting Started
 
-Below is an example of how to use the package to compute an orbital torus and analyze a star's orbit:
+Below is an example of how to use the package to perform Cholesky Decomposition:
 
 ```python
-WIP
+import PyTorus as torus
+
+A = torus.Matrix(3, 3)
+a_data = [[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]]
+N = 3
+
+for i in range(len(a_data)):
+  A.set_row(i, torus.Vector(a_data[i]))
+print(A)
+
+result = torus.CholeskyDecomposition(A, N)
+print("Result of Cholesky Decomposition: ", result)
+print("Decomposed Matrix L (lower triangular):\n", A)
 ```
+Below is an example of how to use the package to simulate the motion of a projectile in a 3D space by numerically integrating the Vector:
+
+```python
+import PyTorus as torus
+
+g = 9.8        # Gravitational constant
+
+# Initial velocities in 3D (x, y, z components)
+v0x = 10.0
+v0y = 20.0
+v0z = 15.0
+
+# Set the integration bounds and accuracy
+a = 0.0
+b = 2.0
+eps = 1e-6
+
+def x_position(t):
+	return v0x * t
+
+def y_position(t):
+	return v0y * t - 0.5 * g * t * t
+
+def z_position(t):
+	return v0z * t
+
+def integrate_vector(funcs, a, b, eps):
+	n = len(funcs)
+	vector = torus.Vector(0.0, 0.0, 0.0)
+	err = 0.0    # Error placeholder
+	
+	for i in range(n):
+		vector.__setitem__(i, torus.qbulir(funcs[i], a, b, eps, err))
+		print(f"Component {i} integrated result: {vector[i]}, error: {err}")
+	return vector
+
+
+position_funcs = [x_position, y_position, z_position]
+result_vector = integrate_vector(position_funcs, a, b, eps)
+
+print(f"\nProjectile's position at t = {b} seconds:")
+for i in range(3):
+    print(f"Component {i}: {result_vector[i]} meters")
+
+```
+
 ## Documentation
 
-For detailed documentation and usage examples, please visit our [documentation](https://your-docs-url.com).
+For detailed documentation and usage examples, please visit our [documentation](WIP).
 
 ## Applications
 
