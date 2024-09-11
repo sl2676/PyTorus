@@ -47,7 +47,7 @@ Below is an example of how to use the package to simulate the motion of a projec
 ```python
 import PyTorus as torus
 
-g = 9.8        # Gravitational constant
+g = 9.8        	  # Gravitational constant
 
 # Initial velocities in 3D (x, y, z components)
 v0x = 10.0
