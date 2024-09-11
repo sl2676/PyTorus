@@ -600,7 +600,7 @@ void int_func_heap_index(std::function<int(int)> func, const int n, PyVector& in
     }
 }
 
-void double_func_heap_index(double(*func)(const int), const int n, PyVector& indx) {
+void double_func_heap_index(std::function<double(const int)> func, const int n, PyVector& indx) {
     int l, j, ir, indxt, i;
     double q;
 
@@ -613,9 +613,9 @@ void double_func_heap_index(double(*func)(const int), const int n, PyVector& ind
 
     for (;;) {
         if (l > 0) {
-            q = (*func)(indxt = py::cast<int>(indx.__getitem__(--l)));
+            q = func(indxt = py::cast<int>(indx.__getitem__(--l)));
         } else {
-            q = (*func)(indxt = py::cast<int>(indx.__getitem__(ir)));
+            q = func(indxt = py::cast<int>(indx.__getitem__(ir)));
             indx.__setitem__(ir, indx.__getitem__(0));
             if (--ir == 0) {
                 indx.__setitem__(0, py::int_(indxt));
@@ -625,10 +625,10 @@ void double_func_heap_index(double(*func)(const int), const int n, PyVector& ind
         i = l;
         j = (l << 1) + 1;
         while (j <= ir) {
-            if (j < ir && (*func)(py::cast<int>(indx.__getitem__(j))) < (*func)(py::cast<int>(indx.__getitem__(j + 1)))) {
+            if (j < ir && func(py::cast<int>(indx.__getitem__(j))) < func(py::cast<int>(indx.__getitem__(j + 1)))) {
                 j++;
             }
-            if (q < (*func)(py::cast<int>(indx.__getitem__(j)))) {
+            if (q < func(py::cast<int>(indx.__getitem__(j)))) {
                 indx.__setitem__(i, indx.__getitem__(j));
                 j += 1 + (i = j);
             } else {
@@ -1338,7 +1338,7 @@ void hqr(PyMatrix& a, const int n, PyVector& wr, PyVector& wi) {
 }
 
 
-static double LevCof(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a, PyVector& fit, const int M, PyMatrix& A, PyVector& B, double (*f)(const double, PyVector&, PyVector&, const int)) {
+static double LevCof(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a, PyVector& fit, const int M, PyMatrix& A, PyVector& B, std::function<double(const double, PyVector&, PyVector&, const int)> func) {
     int i, j, k, l, mf, n;
     double si, dy, wt, cq = 0.0;
     std::vector<double> dyda_data(M, 0.0);
@@ -1369,7 +1369,7 @@ static double LevCof(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVec
     }
 
     for (n = 0; n < N; n++) {
-        dy = py::cast<double>(y.__getitem__(n)) - (*f)(py::cast<double>(x.__getitem__(n)), a, dyda, M);
+        dy = py::cast<double>(y.__getitem__(n)) - func(py::cast<double>(x.__getitem__(n)), a, dyda, M);
         si = 1.0 / (py::cast<double>(sig.__getitem__(n)) * py::cast<double>(sig.__getitem__(n)));
         cq += pow(dy / py::cast<double>(sig.__getitem__(n)), 2);
 
@@ -1391,7 +1391,7 @@ static double LevCof(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVec
     return cq;
 }
 
-double LevMar(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a, PyVector& fit, const int M, double (*f)(const double, PyVector&, PyVector&, const int), const double dcmax, const int itmax) {
+double LevMar(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a, PyVector& fit, const int M, std::function<double(const double, PyVector&, PyVector&, const int)> func, const double dcmax, const int itmax) {
     int it = 0, i, j, mf;
     int mm[2];
     double dc, lam = 0.125, tm, cq, cqo;
@@ -1409,7 +1409,7 @@ double LevMar(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a,
     }
     mm[0] = mm[1] = mf;
 
-    cqo = LevCof(x, y, sig, N, a, fit, M, A, B, f);
+    cqo = LevCof(x, y, sig, N, a, fit, M, A, B, func);
     for (dc = 0., i = 0; i < mf; i++) dc += py::cast<double>(B.__getitem__(i)) * py::cast<double>(B.__getitem__(i));
     dc = sqrt(dc) / double(N);
 
@@ -1422,7 +1422,7 @@ double LevMar(PyVector& x, PyVector& y, PyVector& sig, const int N, PyVector& a,
         }
         GaussBack(Ay, mf, By);
         for (i = j = 0; i < M; i++) if (py::cast<int>(fit.__getitem__(i))) ay.__setitem__(i, py::float_(py::cast<double>(a.__getitem__(i)) + py::cast<double>(By.__getitem__(j++))));
-        if (cqo > (cq = LevCof(x, y, sig, N, ay, fit, M, Ay, By, f))) {
+        if (cqo > (cq = LevCof(x, y, sig, N, ay, fit, M, Ay, By, func))) {
             lam *= 0.125;
             cqo = cq;
             for (dc = 0., i = 0; i < mf; i++) {
@@ -1468,7 +1468,7 @@ void init_numerics(py::module_ &torus) {
 	torus.def("zbrent", &zbrent, py::arg("func"), py::arg("x1"), py::arg("x2"), py::arg("tol"));
 	torus.def("heap_index", &int_heap_index, py::arg("A"), py::arg("n"), py::arg("indx"));
 	torus.def("heap_index", &int_func_heap_index, py::arg("func"), py::arg("n"), py::arg("indx"));
-	torus.def("heap_index", [](double(*func)(const int), int n, PyVector& pyindx) {
+	torus.def("heap_index", [](std::function<double(const int)> func, int n, PyVector& pyindx) {
     	double_func_heap_index(func, n, pyindx);
 	}, py::arg("func"), py::arg("n"), py::arg("indx"));
 	torus.def("qsplin", &qsplin, py::arg("x"), py::arg("y"), py::arg("y2"), py::arg("n"), py::arg("al"), py::arg("x1"), py::arg("x2"));
@@ -1485,8 +1485,8 @@ void init_numerics(py::module_ &torus) {
 	torus.def("balanc", &balanc, py::arg("a"), py::arg("n"));
 	torus.def("elmhes", &elmhes, py::arg("a"), py::arg("n"));
 	torus.def("hqr", &hqr, py::arg("a"), py::arg("n"), py::arg("wr"), py::arg("wi"));
-	torus.def("LevCof", &LevCof, py::arg("x"), py::arg("y"), py::arg("sig"), py::arg("N"), py::arg("a"), py::arg("fit"), py::arg("M"), py::arg("A"), py::arg("B"), py::arg("f"));
-	torus.def("LevMar", &LevMar, py::arg("x"), py::arg("y"), py::arg("sig"), py::arg("N"), py::arg("a"), py::arg("fit"), py::arg("M"), py::arg("f"), py::arg("dcmax"), py::arg("itmax"));
+	torus.def("LevCof", &LevCof, py::arg("x"), py::arg("y"), py::arg("sig"), py::arg("N"), py::arg("a"), py::arg("fit"), py::arg("M"), py::arg("A"), py::arg("B"), py::arg("func"));
+	torus.def("LevMar", &LevMar, py::arg("x"), py::arg("y"), py::arg("sig"), py::arg("N"), py::arg("a"), py::arg("fit"), py::arg("M"), py::arg("func"), py::arg("dcmax"), py::arg("itmax"));
 	torus.def("gauss_fit", &gauss_fit, py::arg("x"), py::arg("p"), py::arg("df"), py::arg("D"));
 	torus.def("FitGauss", &FitGauss, py::arg("x"), py::arg("y"), py::arg("dy"), py::arg("N"), py::arg("p"), py::arg("f"));
 }

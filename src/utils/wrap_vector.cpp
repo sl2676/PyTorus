@@ -713,6 +713,64 @@ public:
     }
 }
 
+	PyVector(py::handle input) {
+    if (py::isinstance<py::args>(input) || py::isinstance<py::list>(input) || py::isinstance<py::tuple>(input)) {
+        
+        bool has_int = false, has_float = false, has_bool = false;
+
+        for (auto item : input) {
+            if (py::isinstance<py::bool_>(item)) {
+                has_bool = true;
+            } else if (py::isinstance<py::float_>(item)) {
+                has_float = true;
+            } else if (py::isinstance<py::int_>(item)) {
+                has_int = true;
+            } else {
+                has_int = false;
+                has_float = false;
+                has_bool = false;
+                break;
+            }
+        }
+
+        if (has_bool) {
+            std::vector<bool> values;
+            for (auto item : input) {
+                values.push_back(item.cast<bool>());
+            }
+            std::vector<int> int_values(values.begin(), values.end()); 
+            baseVec = std::make_unique<TypedVector<int>>(int_values);
+        }
+        else if (has_float) {
+            std::vector<double> values;
+            for (auto item : input) {
+                values.push_back(item.cast<double>());
+            }
+            baseVec = std::make_unique<TypedVector<double>>(values);
+        }
+        else if (has_int) {
+            std::vector<int> values;
+            for (auto item : input) {
+                values.push_back(item.cast<int>());
+            }
+            baseVec = std::make_unique<TypedVector<int>>(values);
+        }
+        else {
+            std::vector<std::complex<double>> values;
+            for (auto item : input) {
+                if (py::isinstance<py::int_>(item) || py::isinstance<py::float_>(item)) {
+                    values.push_back(std::complex<double>(item.cast<double>(), 0));
+                } else {
+                    values.push_back(item.cast<std::complex<double>>());
+                }
+            }
+            baseVec = std::make_unique<TypedVector<std::complex<double>>>(values);
+        }
+    } else {
+        throw std::runtime_error("Unsupported input type for initialization. Expected args, list, or tuple.");
+    }
+}
+
 
 	size_t size() const {
         if (!baseVec) throw std::runtime_error("Vector is uninitialized");
@@ -1226,11 +1284,14 @@ PyMatrix operator%(const PyVector& u, const PyVector& v) {
 // pybinding init function 
 void init_vector(py::module_ &m) {
     py::class_<PyVector>(m, "Vector")
-        .def(py::init<py::args>())
+        //.def(py::init<py::args>())
+		.def(py::init<py::handle>())
+		.def(py::init<py::args>())
+		.def("__len__", &PyVector::size)
         .def("__getitem__", &PyVector::__getitem__)
         .def("__setitem__", &PyVector::__setitem__)
 		.def("__mod__", [](const PyVector& lhs, const PyVector& rhs) {
-            return lhs % rhs; // Call to your C++ operator% function
+            return lhs % rhs; 
         }, "Calculate the outer product of two vectors")
 		.def("__mul__", [](const PyVector& self, const PyVector& other){
 			auto result = self.baseVec->dot_product(other.baseVec.get());
