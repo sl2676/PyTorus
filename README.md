@@ -1,4 +1,4 @@
-# PyTorus ~ Torus Mapper Python Package
+# PytTorus ~ Torus Mapper Python Package
 
 [![PyPI version](https://badge.fury.io/py/torus-mapper.svg)](https://badge.fury.io/py/torus-mapper)
 
@@ -21,14 +21,15 @@ The package allows users to compute orbital tori based on action integrals and p
 Install the package using pip:
 
 ```bash
-pip install PyTorus
+pip install PytTorus
 ```
 ## Getting Started
 
 Below is an example of how to use the package to perform Cholesky Decomposition:
 
 ```python
-import PyTorus as torus
+import PytTorus
+from PytTorus import _torus as torus
 
 A = torus.Matrix(3, 3)
 a_data = [[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]]
@@ -45,7 +46,8 @@ print("Decomposed Matrix L (lower triangular):\n", A)
 Below is an example of how to use the package to simulate the motion of a projectile in a 3D space by numerically integrating the Vector:
 
 ```python
-import PyTorus as torus
+import PytTorus
+from PytTorus import _torus as torus
 
 g = 9.8        # Gravitational constant
 
@@ -90,7 +92,7 @@ for i in range(3):
 
 ## Documentation
 
-For detailed documentation and usage examples, please visit our [documentation](WIP).
+For detailed documentation and usage examples, please visit our [documentation](https://pypi.org/project/PytTorus/0.0.2/).
 
 ## Applications
 
