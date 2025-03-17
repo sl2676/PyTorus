@@ -315,6 +315,7 @@ py::object polev(py::object x, const PyVector& xarr, const PyVector& yarr, const
 	return polint(xarr, yarr, M, x);
 }
 // broken shit
+
 py::object polev_2d(const PyVector& xi, PyMatrix& xarr, PyMatrix& yarr, const PyVector& n, const PyVector& m = PyVector(py::make_tuple(0, 0))) {
     std::vector<int> j(2);
     std::vector<int> M(2);
@@ -342,6 +343,38 @@ py::object polev_2d(const PyVector& xi, PyMatrix& xarr, PyMatrix& yarr, const Py
 
     return result;
 }
+/*
+py::object polev_2d(const PyVector& xi, const PyMatrix& xarr, PyMatrix& yarr, const PyVector& n, const PyVector& m = PyVector(py::make_tuple(0, 0))) {
+	std::vector<int> j(2);
+	std::vector<int> M(2);
+
+	if (m) {
+		M[0] = find_for_polev(j(0), n.__getitem__(0).cast<int>(), m.__getitem__(0).cast<int>(), xarr.getRowAsPyVector(0), xi.__getitem__(0));
+		M[1] = find_for_polev(j(1), n.__getitem__(1).cast<int>(), m.__getitem__(1).cast<int>(), xarr.getRowAsPyVector(1), xi.__getitem__(1));
+	} else {
+		M[0] = find_for_polev(j(0), n.__getitem__(0).cast<int>(), 4, xarr.getRowAsPyVector(0), xi.__getitem__(0));
+		M[1] = find_for_polev(j(1), n.__getitem__(1).cast<int>(), 4, xarr.getRowAsPyVector(1),
+ xi.__getitem__(1));
+	}
+	
+	int l;
+	PyVector y0 = PyVector(py::make_tuple());
+	y0.initialize(M[0], 0.0);
+	
+	for (l = 0, l < M[0]; ++l) {
+		PyVector x_subvector = xarr.getRowAsPyVector(1 + j[1]);
+		PyVector y_subvector = yarr.getRowASPyVector(j[0] + l);
+	
+		y0.__setitem__(l, polint(x_subvector, y_subvector, M[1], xi.__getitem__(1)));
+	}
+
+	PyVector x_subvector_0 = xarr.getRowAsPyVector(0);
+	py::object result = polint(x_subvector_0, y0, M[0], xi.__getitem__(0));
+
+	return result;
+
+}
+*/
 // py::object polint(const PyVector& xa, const PyVector& ya, const int n, const py::object x)
 // int find_for_polev(int& j, const int n, const int m, const PyVector& x, const py::object xi)
 // broken shit
@@ -418,8 +451,126 @@ void Spline(const PyVector& x, const PyVector& y, int const n, PyVector& y2, py:
 		}
 	}
 }
+/*
+void SplinedY(const PyMatrix& x, const PyMatrix& y, const int n, PyMatrix& y1, const PyVector& yp1 = PyVector(py::make_tuple(0)), const PyVector& ypn = PyVector(py::make_tuple(0))) {
+	const double zero = 0., half = 0.5, one = 1., two = 2., three = 3., six = 6.;
+	int i;
+	double qn, p, sig, dx, dx1, dx2, un, dy, dy1;
+	PyVector u = PyVector(py::make_tuple());
+	u.initialize(0, n-1);
+	PyVector y2 = PyVector(py::make_tuple());
+	y2.initalize(0, n-1);	
+	PyVector v = PyVector(py::make_tuple());	
+	v.initialize(0, n-1);
+	dx = x.__getitem__(1) - x.__getitem__(0);
+	dy = y.__getitem__(1) - y.__getitem__(0);
+	
+	if (PyVector.size() > 0) {
+		v.__setitem__(0, -half);
+		u.__setitem__(0, three/dx * (dy/dx - yp1.__setitem__(0)));
+	} else {
+		u.__setitem__(0, v.__getitem__(0));
+		v.__setitem__(0, zero);
+		for (i = 1; i < n-1; i++) {
+			dx1 = x.__getitem__(i+1) - x.__getitem__(i);
+			dx2 = x.__getitem__(i+1) - x.__getitem__(i-1);
+			dy1 = y.__getitem__(i+1) - y.__getitem__(i);
+			sig = dx/dx2;
+			p = sig*v.__getitem__(i-1)+two;
+			v.__setitem__(i) = (sig-one)/p;
+			u.__setitem__(i) = (six*(dy1/dx1-dy/dx)/dx2 - sig*u.__getitem__(i-1)) / p;
+			dx = dx1;
+			dy = dy1; 
+		}
+		if (ypn.size() > 0) {
+			qn = half;
+			un = three/dx * (ypn.__getitem__(0) - dy/dx);
+		} else 
+			un = qn = zero;
+			y2.__setitem__(n-1) = (un-qn*u.__getitem__(n-2)) / (qn*v.__setitem__(n-2)+one);
+			for (i=n-2; i >= 0; i--)
+				y2.__setitem__(i) = v.__setitem__(i)*y2.__getitem__(i+1) + u.__getitem__(i);
+			for(i = 1; i < n; i++) {
+				dx = x.__getitem__(i)-x.__getitem__(i-1);
+				dy = y.__getitem__(i)-y.__getitem__(i-1);
+				if (i==1) y1.__setitem__(0, )
+			}
+	}
+	
+}
+*/
 
+void SplinedY(const PyVector& x, const PyVector& y, const int n, PyVector& y1, py::object yp1, py::object ypn) {
+	const double zero = 0., half = 0.5, one = 1., two = 2., three = 3., six = 6.;
+	int i;
+	py::object qn, p, sig, dx, dx1, dx2;
+	py::object un, dy, dy1;
+	std::vector<py::object> u(n-1);
+	std::vector<py::object> y2(n-1);
+	std::vector<py::object> v(n-1);
+	
+	dx = x.__getitem__(1) - x.__getitem__(0);
+	dy = y.__getitem__(1) - y.__getitem__(0);
+
+	if (yp1) {
+		v[0] = -py::cast(half);
+		u[0] = py::cast(three)/dx * (dy/dx-*yp1);
+	} else
+		u[0] = v[0] = py::cast(zero);
+		for (i = 1; i < n-1; i++) {
+			dx1 = x.__getitem__(i+1)-x.__getitem__(i);
+			dx2 = x.__getitem__(i+1)-x.__getitem__(i-1);
+			dy1 = y.__getitem__(i+1)-y.__getitem__(i);
+			sig = dx/dx2;
+			p = sig*v[i-1]+py::cast(two);
+			v[i] = (sig-py::cast(one))/p;
+			u[i] = (py::cast(six)*(dy1/dx1-dy/dx)/dx2 - sig*u[i-1]) / p;
+			dx = dx1;
+			dy = dy1;
+		}
+		if (ypn) {
+			qn = py::cast(half);
+			un = py::cast(three)/dx * (*ypn - dy/dx);			
+		} else 
+			un = qn = py::cast(zero);
+			y2[n-1] = (un - qn * u[n-2]) / (qn*v[n-1]+py::cast(one));
+			for (i = n-2; i >= 0; i--) 
+				y2[i] = v[i]*y2[i+1] + u[i];
+			for (i=1; i < n; i++) {
+				dx = x.__getitem__(i)-x.__getitem__(i-1);
+				dy = y.__getitem__(i)-y.__getitem__(i-1);
+			}
+		if (i == 1) y1.__setitem__(0, dy/dx = (y2[0] + py::cast(half)*y2[1]) * dx/py::cast(three));
+}
+/*
+work on spline, splout later
+void spline(const PyVector& x, const PyVector& y, const int n, )
+*/
+/*
+py::object splint(const PyVector& x, const PyVector& y, const PyVector& y2, const py::object xi, py::object dy, py::object d2y) {
+	double zero = 0., one = 1., three = 3., six = 6.;
+	py::object h, h6, A, B;
+	if ((h=x.__getitem__(1)-x.__getitem__(0)) == py::cast(zero)) Numerics_error("splint bad X input");	
+	h6 = h / py::cast(six);
+	A = (x.__getitem__(1)-xi) / h;
+	B = py::cast(one) - A;
+	if (dy) {
+		py::object Aq = A*A, Bq = B*B;
+		*dy = (y.__getitem__(1)-y.__getitem__(0)) / h + h6*((py::cast(three)*Bq-py::cast(one))*y2.__getitem__(1)-(py::cast(three)*Aq-py::cast(one))*y2.__getitem__(0));
+		if (d2y) *d2y = A*y2.__getitem__(0) + B*y2.__getitem__(1);
+		return A*y.__getitem__(0) + B*y.__getitem__(1) + ((Aq-py::cast(one))*A*y2.__getitem__(0)+(Bq-py::cast(one))*B*y2.__getitem__(1))*(h*h6);
+	}		
+}
+*/
 void init_numerics_templates(py::module_ &torus) {
+	/*
+    torus.def("splint", [](const PyVector& x, const PyVector& y, const PyVector& y2, const py::object xi, py::object dy, py::object d2y) {
+		return splint(x, y, y2, xi, dy, d2y);
+	});
+    */
+	torus.def("SplinedY", [](const PyVector& x, const PyVector& y, const int n, PyVector& y2, py::object yp1, py::object ypn) {
+		return SplinedY(x, y, n, y2, yp1, ypn);
+	});
 	torus.def("Spline", [](const PyVector& x, const PyVector& y, int const n, PyVector& y2, py::object yp1, py::object ypn) {
 		return Spline(x, y, n, y2, yp1, ypn);
 	});

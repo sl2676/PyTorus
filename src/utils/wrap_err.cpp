@@ -1,4 +1,4 @@
-#include "../../Torus/src/utils/Err.cc"
+#include "../../Torus/src/utils/Err.h"
 namespace py = pybind11;
 
 void init_err(py::module_ &torus) {

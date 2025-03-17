@@ -34,7 +34,7 @@ void init_err(py::module_ &);
 void init_chb(py::module_ &);
 void init_vector(py::module_ &);
 void init_matrix(py::module_ &);
-//void init_pjmebf(py::module_ &);
+void init_pjmebf(py::module_ &);
 void init_numerics(py::module_ &);
 void init_wdmath(py::module_ &);
 void init_pjmnum(py::module_ &);
@@ -45,7 +45,7 @@ namespace py = pybind11;
 using namespace std;
 using namespace pybind11::literals;
 
-PYBIND11_MODULE(PyTorus, torus) {
+PYBIND11_MODULE(_torus, torus) {
 	torus.doc() = "pytorus torus library";
 	init_pi(torus);
 	init_units(torus);

@@ -1,6 +1,8 @@
 #include <pybind11/stl.h>
 
-#include "../../Torus/src/utils/CHB.cc"
+//#include "../../Torus/src/utils/CHB.cc"
+#include "../../Torus/src/utils/CHB.h"
+
 namespace py = pybind11;
 
 void init_chb(py::module_ &torus) {
