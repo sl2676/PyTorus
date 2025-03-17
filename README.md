@@ -4,9 +4,9 @@
 
 ## Overview
 
-**Torus Mapper** is a Python package designed to model the dynamics of galaxies using the torus mapping method. The core functionality is implemented in **C++** for high performance, and exposed to Python using **pybind11**. This combination ensures both computational efficiency and user-friendly interaction for scientific computing tasks.
+**PytTorus** is a Python package designed to model the dynamics of galaxies using the torus mapping method. The core functionality is implemented in **C++** for high performance, and exposed to Python using **pybind11**. This combination ensures both computational efficiency and user-friendly interaction for scientific computing tasks.
 
-The package allows users to compute orbital tori based on action integrals and provides robust tools for analyzing orbits in dynamical systems. By utilizing C++ for the heavy numerical operations and Python for high-level scripting, Torus Mapper offers the best of both worlds—performance and flexibility.
+The package allows users to compute orbital tori based on action integrals and provides robust tools for analyzing orbits in dynamical systems. By utilizing C++ for the heavy numerical operations and Python for high-level scripting, allows for ease of use without the trade off of performance. 
 
 ## Key Features
 
@@ -96,10 +96,10 @@ For detailed documentation and usage examples, please visit our [documentation](
 
 ## Applications
 
-Torus Mapper is a versatile tool with numerous applications in astrophysics and computational dynamics. Below are some common use cases:
+PytTorus is a versatile tool with numerous applications in astrophysics and computational dynamics. Below are some common use cases:
 
 ### 1. Galactic Dynamics Modeling
-Torus Mapper can be used to model the orbital structure of galaxies based on their gravitational potentials. This is useful for:
+PytTorus can be used to model the orbital structure of galaxies based on their gravitational potentials. This is useful for:
 - Simulating star orbits within axisymmetric and triaxial potentials.
 - Investigating the long-term evolution of galactic structures.
 - Mapping the motion of stars in both external galaxies and our own Milky Way.
@@ -112,7 +112,7 @@ The package provides tools for generating initial conditions for N-body simulati
 - Constructing equilibrium models that can be refined with observational data.
 
 ### 3. Resonance Trapping Studies
-Torus Mapper excels at studying the phenomenon of resonance trapping:
+PytTorus excels at studying the phenomenon of resonance trapping:
 - Investigating how stars get caught in resonances within rotating galactic potentials.
 - Analyzing the influence of resonances on the long-term behavior of stellar orbits.
 - Using the angle-action framework to explore resonant and near-resonant structures.
@@ -130,7 +130,7 @@ The package is also capable of helping with stellar stream studies:
 - Facilitating comparison between simulation results and observed streams like the Sagittarius Stream.
 
 ### 6. Academic Research
-Torus Mapper provides a rich platform for academic research in various fields:
+PytTorus provides a rich platform for academic research in various fields:
 - Cosmological simulations for galaxy formation and structure evolution.
 - Studies of dark matter distributions by comparing simulated and observed galactic kinematics.
 - Generating precise, scalable models that can be used to validate theoretical predictions in galactic dynamics.
